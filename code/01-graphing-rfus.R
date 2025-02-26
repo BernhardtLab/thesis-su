@@ -114,7 +114,7 @@ all_rfus_3 <- all_rfus_2 %>%
 View(all_rfus_3)
 
 #saving-------------------------------------------------------------------------
-#write_csv(all_rfus_3, "data/tpc_processed_all_rfus.csv")
+write_csv(all_rfus_3, "data/tpc_processed_all_rfus.csv")
 
 #graphing-----------------------------------------------------------------------
 all_rfus_3 %>% 
