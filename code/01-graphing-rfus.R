@@ -18,7 +18,7 @@ library(stringr)
 #data###########################################################################
 #plate layout-------------------------------------------------------------------
 plate_setup <- read.csv("plate-layout/final_plate_setup.csv")
-View(plate_setup)
+#View(plate_setup)
 #making it match F24 set up
 plate_setup <- plate_setup %>% 
   rename(incubator = treatment) %>% 
@@ -36,7 +36,7 @@ names(RFUs) <- RFUs %>%
 
 all_plates <- map_df(RFUs, read_excel, range = "B30:N38", .id = "file_name") %>% 
   rename(row = `...1`)
-View(all_plates)
+#View(all_plates)
 
 #getting times------------------------------------------------------------------
 all_times <- map_df(RFUs, read_excel, range = "A6:B8", .id = "file_name") %>% 
@@ -63,11 +63,11 @@ all_times <- map_df(RFUs, read_excel, range = "A6:B8", .id = "file_name") %>%
   select(-plate_2) %>% 
   separate(other, into = c("plate", "temp", "read"), sep = "_", remove = F) %>% 
   select(-other)
-View(all_times)
+#View(all_times)
 
 #file name, time, temp, RFUs----------------------------------------------------
 all_plates2 <- left_join(all_plates, all_times, by = "file_name")
-View(all_plates2)
+#View(all_plates2)
 
 #get well id and combine into long format
 all_temp_rfus <- all_plates2 %>% 
@@ -80,38 +80,37 @@ all_temp_rfus$plate_number <- str_sub(all_temp_rfus$plate, -1)
 all_temp_rfus <- all_temp_rfus %>% 
   unite(plate_number, well, col = "well_id", remove = F, sep = "_")
 
-View(all_temp_rfus)
+#View(all_temp_rfus)
 
 #bringing in trt
 plate_setup <- plate_setup %>% 
   unite(plate, well, col = "well_id", remove = F, sep = "_") %>% 
   separate(treatment, into = c("temp_treatment", "replicate_no"), sep = "_", remove = F)
-View(plate_setup)
+#View(plate_setup)
 
 all_rfus_raw <- inner_join(all_temp_rfus, plate_setup, by = c("well_id"))
 
 #cleaning up df
 all_rfus_raw <- all_rfus_raw %>% 
   select(-c(well.x, plate.x, well.y, plate.y, row, column, read, plate_number)) 
-View(all_rfus_raw)
+#View(all_rfus_raw)
 
 #unite time
 all_rfus_2 <- all_rfus_raw %>% 
   unite(col = date_time, Date, Time, sep = " ") %>% 
   mutate(date_time = ymd_hms(date_time)) 
-str(all_rfus_2$date_time)
+#str(all_rfus_2$date_time)
 
 all_rfus_2 <- all_rfus_2 %>% 
   mutate(unique_well = paste(well_id, temp, sep = "_"))
-
-View(all_rfus_2)
+#View(all_rfus_2)
 
 ##make time 0
 all_rfus_3 <- all_rfus_2 %>% 
   group_by(unique_well, temp) %>% 
   mutate(start_time = min(date_time)) %>% 
   mutate(days = interval(start_time, date_time)/ddays(1))
-View(all_rfus_3)
+#View(all_rfus_3)
 
 #saving-------------------------------------------------------------------------
 write_csv(all_rfus_3, "data/tpc_processed_all_rfus.csv")
