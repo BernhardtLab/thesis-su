@@ -34,7 +34,7 @@ View(a2) #need to change the days
 
 all_rfu %>%
   group_by(unique_well, temp) %>%
-  filter(temp == 42) %>%
+  filter(temp == 12) %>%
   mutate(start_time = min(date_time)) %>%
   mutate(days = interval(start_time, date_time)/ddays(1)) %>%
   ggplot(aes(x = days, y = RFU, group = unique_well, color = temp_treatment)) +
@@ -60,11 +60,12 @@ fitting_window_log_linear <- function(x) {
     ungroup()
 }
 
-#17 windows from read 0 to read 16 -- need to change
-windows <- seq(1,9, by = 1)
+#16 windows from read 0 to read 15
+windows <- seq(1,16, by = 1)
 
 multi_fits <- windows %>% 
-  map_df(fitting_window_log_linear, .id = "iteration")
+  map_df(fitting_window_log_linear, .id = "iteration") %>% 
+  filter(temp_treatment != "blank")
 
 ##Plotting to visualize number of points 
 multi_fits %>% 
@@ -76,8 +77,7 @@ multi_fits %>%
 exp_fits_top <- multi_fits %>%
   filter(term == "days") %>%
   group_by(unique_well, temp, temp_treatment) %>% 
-  top_n(n = 1, wt = estimate) %>% 
-  select("temp_treatemnt" != blank) #?
+  top_n(n = 1, wt = estimate) 
 
 ##Plotting
 exp_fits_top %>% 
@@ -85,15 +85,86 @@ exp_fits_top %>%
   geom_point() + 
   geom_line() + 
   ggtitle("exponential fits")
-View(exp_fits_top) #here, check for presence of al tpc test temps
+View(exp_fits_top) #here, check for presence of all tpc test temps - yes
 
 exp_fits_top %>% 
-  filter(temp_treatment %in% c("6F", "24F", "48F")) %>% 
+  filter(temp_treatment %in% c("6F", "48F")) %>% 
   ggplot(aes(x = temp, y = estimate, group = unique_well, color = temp_treatment)) + 
   geom_point() + 
   ggtitle("fluctuating point")
 
 #saving-------------------------------------------------------------------------
-write_csv(exp_fits_top, "data/growth-sequential-fits.csv")
+#write_csv(exp_fits_top, "data/growth-sequential-fits.csv")
+
+##Selecting temp, rep, number_of_points columns and discarding the rest, making rep column characters
+e2 <- exp_fits_top %>%
+  select(unique_well, temp, temp_treatment, number_of_points)
+
+##Joining a2 and e2 by temp and population
+a3 <- left_join(a2, e2)
+
+View(a3)
+
+##Splitting the grouped data frame into a list of data frames, where each data frame corresponds 
+##to one unique combination of rep and temp.
+##Need to group split to get correct time points in the next step
+abundances_split <- a2 %>%
+  arrange(days) %>%
+  group_by(unique_well, temp) %>%  
+  group_split() 
+
+##Each row's original position in the data frame will be recorded in a new column called time_point. 
+##This tracks the sequence of the rows.
+p2 <- abundances_split %>% 
+  map_df(rownames_to_column, var = "time_point") 
+
+a4 <- left_join(p2, e2)
+
+a5 <- a4 %>% 
+  group_by(unique_well) %>% 
+  filter(days == 0) %>% 
+  mutate(N0 = RFU) %>% 
+  select(N0, unique_well)
+#a5 doesn't have any unique wells ending in 46 --> no 46 deg
+#because of filter(days == 0)
 
 
+a5b <- all_rfu %>% 
+  group_by(unique_well) %>% 
+  filter(days == 0) %>% 
+  mutate(N0 = RFU) %>% 
+  select(N0, unique_well)
+
+a6 <- inner_join(a4, a5b)
+#a6 %>% ggplot(aes(temp, N0, group = unique_well, colour = temp_treatment)) + geom_point()
+a6 %>% filter(temp == 42) %>% View
+
+##Only including time points that are less than the number of points
+a7 <-  a6 %>% 
+  mutate(time_point = as.numeric(time_point)) %>% 
+  filter(time_point <= number_of_points)
+View(a7)
+
+a7 %>% 
+  filter(temp == 30) %>% 
+  ggplot(aes(x = days, y = RFU, group = unique_well, color = temp_treatment)) + geom_point() + geom_line() + 
+  facet_wrap( ~ temp)
+
+write_csv(a7, "data/growth-estimates.csv")
+
+##Fitting the model
+results <- a7 %>% 
+  group_by(unique_well, temp, temp_treatment, treatment) %>% #added treatemnt to have ind flask
+  do(tidy(nlsLM(RFU ~ N0 * exp(r*days),
+                data= .,  start=list(r=0.1),
+                control = nls.control(maxiter=2000, minFactor=1/204800000)))) %>% 
+  ungroup() 
+write_csv(results, "data/gr-estimate.csv")
+
+##Plotting
+results %>% 
+  ggplot(aes(x = temp, y = estimate, group = temp_treatment, color = temp_treatment)) + 
+  geom_point() + 
+  geom_smooth(se=F) + 
+  theme_minimal() +
+  ggtitle("results?")
