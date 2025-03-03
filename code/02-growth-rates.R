@@ -69,7 +69,8 @@ multi_fits <- windows %>%
 
 ##Plotting to visualize number of points 
 multi_fits %>% 
-  filter(term == "days") %>% 
+  filter(term == "days") %>%
+  filter(unique_well == "1_D6_12") %>% View
   ggplot(aes(x = number_of_points, y = estimate, group = unique_well, color = temp_treatment)) + geom_point() + geom_line() +
   facet_wrap( ~ temp, scales = "free")
 
@@ -78,6 +79,9 @@ exp_fits_top <- multi_fits %>%
   filter(term == "days") %>%
   group_by(unique_well, temp, temp_treatment) %>% 
   top_n(n = 1, wt = estimate) 
+
+### look into this one: filter(temp == 12, temp_treatment == "14C", well_id == "1_D6")
+
 
 ##Plotting
 exp_fits_top %>% 
@@ -153,7 +157,10 @@ a7 %>%
 write_csv(a7, "data/growth-estimates.csv")
 
 
-
+a7 %>% 
+  filter(temp == 12, temp_treatment == "14C", well_id == "1_D6", unique_well == "1_D6_12") %>% 
+  ggplot(aes(x = days, y = RFU, group = unique_well), color = "blue") + geom_point() + geom_line() + 
+  facet_wrap( ~ temp, scales = "free")  
 
 
 
