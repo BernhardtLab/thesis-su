@@ -122,19 +122,19 @@ all_rfus_3 %>%
   facet_wrap( ~ temp, scales = "free") 
 
 
-all_rfus_3 %>% 
-  ggplot(aes(x = days, y = RFU, color = temp_treatment, group = well_id)) + 
-  geom_line() + 
-  facet_wrap(~ factor(temp, levels = c(6, 12, 18, 24, 30, 36, 42, 46)), scales = "free")
-
-all_rfus_3 %>% 
-  filter(temp_treatment == "blank") %>% 
-  ggplot(aes(x = days, y = RFU)) + 
-  geom_point() + 
-  facet_wrap( ~ temp, scales = "free") +
-  ggtitle("blanks")
-
-all_rfus_3 %>% 
-  filter(temp_treatment == "blank") %>% 
-  filter(RFU > 300) %>% 
-  View()
+# all_rfus_3 %>% 
+#   ggplot(aes(x = days, y = RFU, color = temp_treatment, group = well_id)) + 
+#   geom_line() + 
+#   facet_wrap(~ factor(temp, levels = c(6, 12, 18, 24, 30, 36, 42, 46)), scales = "free")
+# 
+# all_rfus_3 %>% 
+#   filter(temp_treatment == "blank") %>% 
+#   ggplot(aes(x = days, y = RFU)) + 
+#   geom_point() + 
+#   facet_wrap( ~ temp, scales = "free") +
+#   ggtitle("blanks")
+# 
+# all_rfus_3 %>% 
+#   filter(temp_treatment == "blank") %>% 
+#   filter(RFU > 300) %>% 
+#   View()
