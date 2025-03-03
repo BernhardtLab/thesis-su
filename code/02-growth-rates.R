@@ -18,8 +18,8 @@ a2 <- all_rfu %>%
   mutate(start_time = min(date_time)) %>%
   mutate(days = interval(start_time, date_time)/ddays(1)) %>%
   filter(treatment != "na") %>%
-  mutate(measured = case_when(temp == 12 & days > 1 & days < 8 ~ "yes",
-                              temp == 14 & days < 8 ~ "yes",
+  mutate(measured = case_when(temp == 12 & days > 1 & days < 9 ~ "yes",
+                              temp == 14 & days < 9 ~ "yes",
                               temp == 20 & days < 6.5 ~ "yes",
                               temp == 25 & days < 6.5 ~ "yes",
                               temp == 30 & days < 6 ~ "yes",
@@ -61,7 +61,7 @@ fitting_window_log_linear <- function(x) {
 }
 
 #16 windows from read 0 to read 15
-windows <- seq(1,16, by = 1)
+windows <- seq(1,17, by = 1)
 
 multi_fits <- windows %>% 
   map_df(fitting_window_log_linear, .id = "iteration") %>% 
@@ -142,15 +142,20 @@ a6 %>% filter(temp == 42) %>% View
 ##Only including time points that are less than the number of points
 a7 <-  a6 %>% 
   mutate(time_point = as.numeric(time_point)) %>% 
-  filter(time_point <= number_of_points)
+  filter(time_point <= number_of_points) ### it's looking like this filtering step isn't quite working as we had hoped -- it's keeping some time points for the 14C treatment that have clearly passed their exponential phase. So, we need to go back and figure out how to trim those out.
 View(a7)
 
 a7 %>% 
-  filter(temp == 30) %>% 
+  # filter(temp == 30) %>% 
   ggplot(aes(x = days, y = RFU, group = unique_well, color = temp_treatment)) + geom_point() + geom_line() + 
-  facet_wrap( ~ temp)
+  facet_wrap( ~ temp, scales = "free")  
 
 write_csv(a7, "data/growth-estimates.csv")
+
+
+
+
+
 
 ##Fitting the model
 results <- a7 %>% 
