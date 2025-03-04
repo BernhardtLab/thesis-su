@@ -23,8 +23,25 @@ x = 1
 
 windows <- seq(1,17, by = 1)
 
-multi_fits <- windows %>% 
+multi_fits_aug <- windows %>% 
   map_df(fitting_window_log_linear_aug, .id = "iteration") %>% 
   filter(temp_treatment != "blank")
 
-View(multi_fits)
+View(multi_fits_aug)
+
+multfit <- left_join(multi_fits, multi_fits_aug)
+View(multfit)
+
+multfit %>% 
+  filter(temp == 12) %>% 
+  filter(unique_well == "1_D6_12") %>% 
+  #select(.fitted, estimate) %>% 
+  View
+#highest estimate 3.88, highest .fitted 8.11
+
+multfit %>% 
+  filter(temp == 12) %>% 
+  filter(unique_well == "1_D6_12") %>% 
+  ggplot(aes(x = days, y = .fitted)) + 
+  geom_point() + 
+  geom_line()
