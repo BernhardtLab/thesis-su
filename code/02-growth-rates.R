@@ -60,8 +60,8 @@ fitting_window_log_linear <- function(x) {
     ungroup()
 }
 
-#17 windows from read 0 to read 16
-windows <- seq(1,17, by = 1)
+#18 windows from read 0 to read 17
+windows <- seq(1,18, by = 1)
 
 multi_fits <- windows %>% 
   map_df(fitting_window_log_linear, .id = "iteration") %>% 
@@ -70,7 +70,7 @@ multi_fits <- windows %>%
 ##Plotting to visualize number of points 
 multi_fits %>% 
   filter(term == "days") %>%
-  #filter(unique_well == "1_D6_12") %>% View
+  filter(unique_well == "1_D6_12") %>% View #why estimates after iteration 12 are all the same
   ggplot(aes(x = number_of_points, y = estimate, group = unique_well, color = temp_treatment)) + geom_point() + geom_line() +
   facet_wrap( ~ temp, scales = "free")
 
