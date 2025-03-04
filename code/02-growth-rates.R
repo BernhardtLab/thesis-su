@@ -21,14 +21,14 @@ a2 <- all_rfu %>%
   mutate(measured = case_when(temp == 12 & days > 1 & days < 9 ~ "yes",
                               temp == 14 & days < 9 ~ "yes",
                               temp == 20 & days < 6.5 ~ "yes",
-                              temp == 25 & days < 6.5 ~ "yes",
-                              temp == 30 & days < 6 ~ "yes",
-                              temp == 36 & days < 6.5 ~ "yes",
-                              temp == 38 & days > 0.5 & days < 2 ~ "yes",
+                              temp == 25 & days < 4 ~ "yes",
+                              temp == 30 & days < 4 ~ "yes",
+                              temp == 36 & days < 4 ~ "yes",
+                              temp == 38 & days > 4 & days < 2 ~ "yes",
                               temp == 42 & days > 0 & days < 2 ~ "yes",
                               TRUE  ~ "no")) %>%
   filter(measured == "yes")
-View(a2) #need to change the days
+View(a2) 
 
 #ctrl shift c for #
 
