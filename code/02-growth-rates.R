@@ -60,8 +60,8 @@ fitting_window_log_linear <- function(x) {
     ungroup()
 }
 
-#18 windows from read 0 to read 17
-windows <- seq(1,18, by = 1)
+#19 windows from read 0 to read 18
+windows <- seq(1,1, by = 1)
 
 multi_fits <- windows %>% 
   map_df(fitting_window_log_linear, .id = "iteration") %>% 

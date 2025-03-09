@@ -119,7 +119,8 @@ write_csv(all_rfus_3, "data/tpc_processed_all_rfus.csv")
 all_rfus_3 %>% 
   ggplot(aes(x = days, y = RFU, color = temp_treatment, group = well_id)) + 
   geom_line() + 
-  facet_wrap( ~ temp, scales = "free") 
+  facet_wrap( ~ temp, scales = "free") +
+  ggtitle("RFUs")
 
 
 # all_rfus_3 %>% 

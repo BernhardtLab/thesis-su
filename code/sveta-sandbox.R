@@ -21,7 +21,7 @@ fitting_window_log_linear_aug <- function(x) {
 
 x = 1
 
-windows <- seq(1,17, by = 1)
+windows <- seq(1,19, by = 1)
 
 multi_fits_aug <- windows %>% 
   map_df(fitting_window_log_linear_aug, .id = "iteration") %>% 
