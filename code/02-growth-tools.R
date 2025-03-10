@@ -54,11 +54,13 @@ View(gdat3) #ije code 06, line 77
 gdat4 <- gdat3 %>% 
   filter(treatment != "blank_blank") %>% 
   separate(col = unique_well, into = c("plate", "well", "tpctemp"), sep = "_") %>% 
-  separate(col = treatment, into = c("acclimation_trt", "replicate_flask"), sep = "_")
+  unite(plate, well, col = "unique_well", sep = "_")
 
-gdat4 <- gdat4 %>% 
-  unite(plate, well, tpctemp, col = "unique_well", sep = "_") %>% 
-  unite(acclimation_trt, replicate_flask, col = "treatment", sep = "_")
+#  separate(col = treatment, into = c("acclimation_trt", "replicate_flask"), sep = "_")
+
+# gdat4 <- gdat4 %>% 
+#   unite(plate, well, tpctemp, col = "unique_well", sep = "_") %>% 
+#   unite(acclimation_trt, replicate_flask, col = "treatment", sep = "_")
 
 ################################################################################
 #ije's code 07 tpc nls fitting
@@ -84,8 +86,7 @@ library(MuMIn)
 mod = 'lactin2_1995'
 
 tester <- gdat4 %>% 
-  separate(col = unique_well, into = c("plate", "well"), sep = "_") %>% 
-  filter (unique_well == "1_C10_36")
+  filter (unique_well == "1_C10")
 str(tester)
 tester$tpctemp <- as.numeric(tester$tpctemp)
 
@@ -93,34 +94,39 @@ tester$tpctemp <- as.numeric(tester$tpctemp)
 start_vals <- get_start_vals(tester$tpctemp, tester$mu, model_name = 'lactin2_1995')
 
 #>         a          b       tmax    delta_t 
-#0.1194843 -0.2540080 36.0000000  0.0000000 
+#0.1194843 -0.2540080 42.0000000  6.0000000
 
+#wliune 66 remove ed
+# get limits
+low_lims <- get_lower_lims(tester$tpctemp, tester$mu, model_name = 'lactin2_1995')
+low_lims
+#>  a       b    tmax delta_t 
+#>     0     -10      12       0 
 
+upper_lims <- get_upper_lims(tester$tpctemp, tester$mu, model_name = 'lactin2_1995')
+upper_lims
+#>     a       b    tmax delta_t 
+#>       1       1     420    3840 
 
-#Ije line 193
-# Lactin 2
-start.vals.lac <- get_start_vals(df.i$Temp, df.i$r.gt, model_name = 'lactin2_1995')
+start_lower <- pmax(start_vals - 10, low_lims)
+start_upper <- pmin(start_vals + 10, upper_lims)
 
-lac_nls <- nls_multstart(r.gt ~ lactin2_1995(temp = Temp, a, b, tmax, delta_t),
-                         data = df.i,
-                         iter = c(4, 4, 4, 4), 
-                         start_lower = start.vals.lac - 10,
-                         start_upper = start.vals.lac + 10,
-                         lower = get_lower_lims(df.i$Temp, df.i$r.gt, model_name = 'lactin2_1995'),
-                         upper = get_upper_lims(df.i$Temp, df.i$r.gt, model_name = 'lactin2_1995'),
-                         supp_errors = 'Y',
-                         convergence_count = FALSE
-)
+lactinfit <- nls_multstart(mu ~ lactin2_1995(temp = tpctemp, a, b, tmax, delta_t),
+                           data = tester,
+                           iter = c(4,4,4,4),
+                           start_lower = get_start_vals(tester$tpctemp, tester$mu, model_name = 'lactin2_1995') - 10,
+                           start_upper = get_start_vals(tester$tpctemp, tester$mu, model_name = 'lactin2_1995') + 10,
+                           lower = low_lims,
+                           upper = upper_lims,
+                           supp_errors = 'Y', 
+                           convergence_count = FALSE)
+lactinfit
 
-summary(lac_nls)
+calc_params(lactinfit) %>%
+  mutate_all(round, 2)
 
-model.AICc <- rbind(model.AICc, data.frame(model = "Lactin2", AICc = AICc(lac_nls)))
-
-preds.lac <- data.frame(Temp = seq(min(df.i$Temp - 2), max(df.i$Temp +2), length.out = 100))
-preds.lac <- broom::augment(lac_nls, newdata = preds.lac)
-
-lac_plot <- ggplot(preds.lac) + geom_point(aes(Temp, r.gt), df.i) +
-  geom_line(aes(Temp, .fitted), col = 'darkslateblue') + theme_classic() +ggtitle('Lactin 2') +ylim(-3,5)
-
-nls.plot.list[['Lactin 2']] <- lac_plot # store the plot
+#> rmax topt ctmin ctmax    e    eh  q10 thermal_safety_margin
+#>  0.6 27.5 11.95 36.08 1.33 -3.31 6.26                  8.58
+#> thermal_tolerance breadth skewness
+#>             24.13    9.84     4.64
 
