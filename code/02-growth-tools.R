@@ -30,9 +30,7 @@ sdat2<-allrfu[allrfu$unique_well =='1_E11_14',]
 res<-get.growth.rate(sdat2$days,sdat2$log_rfu,plot.best.Q = T,id = '1_E11_14')
 res$best.model
 res$best.slope
-
 res$best.model.rsqr
-
 res$best.se
 
 #summary
@@ -92,7 +90,6 @@ tester$tpctemp <- as.numeric(tester$tpctemp)
 
 # get start vals
 start_vals <- get_start_vals(tester$tpctemp, tester$mu, model_name = 'lactin2_1995')
-
 #>         a          b       tmax    delta_t 
 #0.1194843 -0.2540080 42.0000000  6.0000000
 
@@ -125,12 +122,10 @@ lactinfit
 calc_params(lactinfit) %>%
   mutate_all(round, 2)
 
-#> rmax topt ctmin ctmax    e    eh  q10 thermal_safety_margin
-#>  0.6 27.5 11.95 36.08 1.33 -3.31 6.26                  8.58
-#> thermal_tolerance breadth skewness
-#>             24.13    9.84     4.64
+# rmax  topt ctmin ctmax    e   eh q10 thermal_safety_margin thermal_tolerance breadth skewness
+#1 2.71 31.79 -2.76 41.49 0.36 3.19  NA                   9.7             44.25   13.07    -2.83
 
-#ije line  359
+#ije line  359-----------------
 #lactin2 is the bets model for all the data - now loop through all treatments with just lactin2 and plot the graphs by the species/phos treatment
 a.gt<-gdat4
 
