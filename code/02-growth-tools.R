@@ -140,10 +140,10 @@ output_dir1 <- "lactin2-tpc"
 if (!dir.exists(output_dir1)) dir.create(output_dir1)
 
 for (treatment in treatment_list) {
-    # a.i <- a.gt %>%
-    #   filter(treatment == treatment) # Remove any unnecessary columns if applicable
-    # 
-    # if (nrow(a.i) == 0) next  # Skip if no data for the combination
+    a.i <- a.gt %>%
+      filter(treatment == treatment) # Remove any unnecessary columns if applicable
+
+    if (nrow(a.i) == 0) next  # Skip if no data for the combination
     
     # Initialize AICc storage and plot list
     model.AICc <- data.frame(model = character(), AICc = numeric(), stringsAsFactors = FALSE)
