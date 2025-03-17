@@ -14,6 +14,7 @@ library(gridExtra)
 library(grid)
 library(png)
 library(cowplot)
+library(purrr)
 
 #data
 allrfu <- read_csv("data/tpc_processed_all_rfus.csv") %>% 
@@ -36,11 +37,27 @@ res$best.se
 #summary
 gdat <- allrfu %>% group_by(unique_well, treatment) %>% 
   do(grs=get.growth.rate(x=.$days,y=.$log_rfu,
-                         id=.$unique_well,plot.best.Q=T,fpath="figures/gdat-summaries"))  
+                         id=.$unique_well,plot.best.Q=F))  
 
 sumgdat <- gdat %>% summarise(unique_well, treatment, mu=grs$best.slope,best.model=grs$best.model,
                    best.se=grs$best.se)
 View(sumgdat)
+
+unique(sumgdat$best.model)
+
+
+
+gdat <- allrfu %>% group_by(unique_well, treatment) %>% 
+  do(grs=get.growth.rate(x=.$days, y=.$log_rfu,id=.$unique_well,plot.best.Q=F,
+                         methods=c('sat'))) %>% 
+  summarise(trt,mu=grs$best.slope,best.model=grs$best.model)
+
+# View results
+print(results)
+
+
+gdat$grs
+
 
 gdat3 <- gdat %>% summarise(unique_well, treatment, mu=grs$best.slope,best.model=grs$best.model,
                             best.se=grs$best.se,best.R2=grs$best.model.rsqr,
@@ -72,14 +89,14 @@ library(minpack.lm)
 library(rootSolve)
 library(forcats)
 library(dplyr)
-#install.packages("rTPC")
+
 library(rTPC)
-#install.packages("nls.multstart")
+
 library(nls.multstart)
 library(ggplot2)
 library(cowplot)
 library(RColorBrewer)
-#install.packages("MuMIn")
+
 library(MuMIn)
 
 #ije line 38
@@ -138,13 +155,16 @@ a.gt$r.gt <- as.numeric(a.gt$mu)
 a.gt$treatment <- as.factor(a.gt$treatment)
 treatment_list <- unique(a.gt$treatment)
 
+
+treatment_list[1]
+i<- 2
 # Create directory to store outputs
 output_dir1 <- "lactin2-tpc" 
 if (!dir.exists(output_dir1)) dir.create(output_dir1)
 
-for (treatment in treatment_list) {
+for (i in 1:length(treatment_list)) {
     a.i <- a.gt %>%
-      filter(treatment == treatment) # Remove any unnecessary columns if applicable
+      filter(treatment == treatment_list[i]) # Remove any unnecessary columns if applicable
 
     if (nrow(a.i) == 0) next  # Skip if no data for the combination
     
@@ -154,16 +174,16 @@ for (treatment in treatment_list) {
     
     # Function to fit models
     fit_model <- function(model_name, formula, iter, param_count) {
-      start_vals <- get_start_vals(a.gt$Temp, a.gt$r.gt, model_name = model_name) #change a/i/ to a/gt
+      start_vals <- get_start_vals(a.i$Temp, a.i$r.gt, model_name = model_name) #change a/i/ to a/gt
       
       nls_fit <- try(nls_multstart(
         formula,
-        data = a.gt,
+        data = a.i,
         iter = rep(4, param_count),
         start_lower = start_vals - 10,
         start_upper = start_vals + 10,
-        lower = get_lower_lims(a.gt$Temp, a.gt$r.gt, model_name = model_name),
-        upper = get_upper_lims(a.gt$Temp, a.gt$r.gt, model_name = model_name),
+        lower = get_lower_lims(a.i$Temp, a.i$r.gt, model_name = model_name),
+        upper = get_upper_lims(a.i$Temp, a.i$r.gt, model_name = model_name),
         supp_errors = 'Y',
         convergence_count = FALSE
       ), silent = TRUE)
@@ -174,12 +194,12 @@ for (treatment in treatment_list) {
       model.AICc <<- rbind(model.AICc, data.frame(model = model_name, AICc = AICc(nls_fit)))
       
       # Generate predictions
-      preds <- data.frame(Temp = seq(min(a.gt$Temp - 2), max(a.gt$Temp + 2), length.out = 100))
+      preds <- data.frame(Temp = seq(min(a.i$Temp - 2), max(a.i$Temp + 2), length.out = 100))
       preds <- broom::augment(nls_fit, newdata = preds)
       
       # Plot
       plot <- ggplot(preds) + 
-        geom_point(aes(Temp, r.gt), data = a.gt, size = 5) +  
+        geom_point(aes(Temp, r.gt), data = a.i, size = 5) +  
         geom_line(aes(Temp, .fitted), col = 'darkslateblue', linewidth = 6) + 
         theme_classic(base_size = 20) + 
         theme(
@@ -198,7 +218,7 @@ for (treatment in treatment_list) {
     
     # Save plots
     mod_grid <- plot_grid(plotlist = nls.plot.list)
-    plot_filename <- paste0(output_dir1, "/TPC_plots_", treatment, ".pdf")
+    plot_filename <- paste0(output_dir1, "/TPC_plots_", treatment_list[i], ".pdf")
     ggsave(plot_filename, plot = mod_grid, width = 24, height = 16)
 }
 }
