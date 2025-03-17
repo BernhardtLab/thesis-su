@@ -43,11 +43,20 @@ sumgdat <- gdat %>% summarise(unique_well, treatment, mu=grs$best.slope,best.mod
                    best.se=grs$best.se)
 View(sumgdat)
 
+gdat42 <- sumgdat %>% 
+  filter(grepl("42", unique_well)) %>% 
+  filter(treatment != "blank_blank")
+
+write_csv(gdat42, "data/gdat42.csv")
+
+
 unique(sumgdat$best.model)
 
 
 
-gdat <- allrfu %>% group_by(unique_well, treatment) %>% 
+gdat2 <- allrfu %>% 
+  filter(treatment != "blank_blank") %>% 
+  group_by(unique_well, treatment) %>% 
   do(grs=get.growth.rate(x=.$days, y=.$log_rfu,id=.$unique_well,plot.best.Q=F,
                          methods=c('sat'))) %>% 
   summarise(trt,mu=grs$best.slope,best.model=grs$best.model)
@@ -55,10 +64,126 @@ gdat <- allrfu %>% group_by(unique_well, treatment) %>%
 # View results
 print(results)
 
+sumdat2 <- sumgdat %>% 
+  filter(treatment != "blank_blank")
 
-gdat$grs
+# trying to fit the growth rates with a for loop --------------------------
+allrfu2 <- allrfu %>% 
+  filter(treatment != "blank_blank")
 
 
+unique_well_list <- unique(allrfu2$unique_well)
+
+
+
+for (i in 1:length(unique_well_list)) {
+  a.i <- allrfu2 %>%
+    filter(unique_well == unique_well_list[i]) # Remove any unnecessary columns if applicable
+  
+  growth_results <- get.growth.rate(x= a.i$days, y=a.i$log_rfu,id= a.i$unique_well,plot.best.Q=F,
+                  methods=c('sat'))
+  
+  results <- data.frame(mu = growth_results$best.slope, se = growth_results$best.se, unique_well = unique(a.i$unique_well))
+
+output <- bind_rows(results, results[i])
+
+return(output)
+
+}
+
+
+
+
+# trying for loop with chat gpt help --------------------------------------
+# Initialize an empty data frame to store results
+
+allrfu_no42 <- allrfu2 %>% 
+  filter(!grepl("_42", unique_well))
+ 
+unique_well_list <- unique(allrfu_no42$unique_well) 
+
+output <- data.frame(mu = numeric(), se = numeric(), unique_well = character())
+
+for (i in seq_along(unique_well_list)) { 
+  tryCatch({
+    a.i <- allrfu2 %>%
+      filter(unique_well == unique_well_list[i])  # Filter for the specific well
+    
+    # Compute growth rate
+    growth_results <- get.growth.rate(x = a.i$days, 
+                                      y = a.i$log_rfu, 
+                                      id = a.i$unique_well, 
+                                      plot.best.Q = FALSE, 
+                                      methods = c('sat'))
+    
+    # Store results in a data frame
+    results <- data.frame(mu = growth_results$best.slope, 
+                          se = growth_results$best.se, 
+                          unique_well = unique(a.i$unique_well))
+    
+    # Append results to output
+    output <- bind_rows(output, results)
+  }, error = function(e) {
+    message(paste("Error in iteration", i, ":", conditionMessage(e)))
+    # Continue to the next iteration without stopping the loop
+  })
+}
+
+# Return the final output after the loop completes
+output
+
+write_csv(output, "data/output-only-42.csv")
+setdiff(unique_well_list, output$unique_well)
+
+
+
+
+# now for the 42 degrees --------------------------------------------------
+
+
+# trying for loop with chat gpt help --------------------------------------
+# Initialize an empty data frame to store results
+
+allrfu_only42 <- allrfu2 %>% 
+  filter(grepl("_42", unique_well))
+
+unique_well_list <- unique(allrfu_only42$unique_well) 
+
+output_42 <- data.frame(mu = numeric(), se = numeric(), unique_well = character())
+
+for (i in seq_along(unique_well_list)) { 
+  tryCatch({
+    a.i <- allrfu_only42 %>%
+      filter(unique_well == unique_well_list[i])  # Filter for the specific well
+    
+    # Compute growth rate
+    growth_results <- get.growth.rate(x = a.i$days, 
+                                      y = a.i$log_rfu, 
+                                      id = a.i$unique_well, 
+                                      plot.best.Q = FALSE, 
+                                      methods = c('gr'))
+    
+    # Store results in a data frame
+    results <- data.frame(mu = growth_results$best.slope, 
+                          se = growth_results$best.se, 
+                          unique_well = unique(a.i$unique_well))
+    
+    # Append results to output
+    output_42 <- bind_rows(output_42, results)
+  }, error = function(e) {
+    message(paste("Error in iteration", i, ":", conditionMessage(e)))
+    # Continue to the next iteration without stopping the loop
+  })
+}
+
+# Return the final output after the loop completes
+output_42
+
+
+
+
+
+######
 gdat3 <- gdat %>% summarise(unique_well, treatment, mu=grs$best.slope,best.model=grs$best.model,
                             best.se=grs$best.se,best.R2=grs$best.model.rsqr,
                             nobs.exp=grs$best.model.slope.n)
