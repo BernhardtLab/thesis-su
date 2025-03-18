@@ -12,7 +12,7 @@ allrfu_no42 <- allrfu2 %>%
 
 unique_well_list <- unique(allrfu_no42$unique_well) 
 
-output <- data.frame(mu = numeric(), se = numeric(), unique_well = character())
+output <- data.frame(mu = numeric(), se = numeric(), unique_well = character()) #adding treatment = character() creates a column with NA values
 
 for (i in seq_along(unique_well_list)) { 
   tryCatch({
@@ -54,10 +54,22 @@ write_csv(gdat42, "data/gdat42.csv")
 output_only42 <- read.csv("data/gdat42.csv")
 
 #binding---------------------
+col_no42 <- data.frame(allrfu_no42$unique_well, allrfu_no42$treatment) %>% 
+  rename("unique_well" = "allrfu_no42.unique_well") %>% 
+  rename("treatment" = "allrfu_no42.treatment")
+
+output_no42 <- left_join(output_no42, col_no42)
+
 output_only42 <- output_only42 %>% 
-  rename ("se" = "best.se")
+  rename ("se" = "best.se") %>% 
+  select(-"best.model")
+
 mock_ouput <- bind_rows(output_no42, output_only42)
-View(mock_ouput) #treatment, best model discrapncies
+View(mock_ouput)
+
+mock_ouput <- mock_ouput %>% 
+  separate(col = unique_well, into = c("plate", "well", "tpctemp"), sep = "_") %>% 
+  unite(plate, well, col = "unique_well", sep = "_")
 
 #making tpc-------------------------
 library(tidyverse)
@@ -75,13 +87,13 @@ library(RColorBrewer)
 library(MuMIn)
 
 #using lactin2
-a.gt<-gdat4
+a.gt<-mock_ouput
 
-a.gt$well.ID <- as.factor(gdat4$unique_well)
-a.gt$Temp <- as.numeric(a.gt$tpctemp)
-a.gt$r.gt <- as.numeric(a.gt$mu)
-a.gt$treatment <- as.factor(a.gt$treatment)
-treatment_list <- unique(a.gt$treatment)
+a.gt$well.ID <- as.factor(mock_ouput$unique_well)
+a.gt$Temp <- as.numeric(mock_ouput$tpctemp) 
+a.gt$r.gt <- as.numeric(mock_ouput$mu)
+a.gt$treatment <- as.factor(mock_ouput$treatment)
+treatment_list <- unique(mock_ouput$treatment)
 
 # Create directory to store outputs
 output_dir1 <- "lactin2-tpc" 
@@ -125,7 +137,7 @@ for (treatment in treatment_list) {
     # Plot
     plot <- ggplot(preds) + 
       geom_point(aes(Temp, r.gt), data = a.gt, size = 5) +  
-      geom_line(aes(Temp, .fitted), col = 'darkslateblue', linewidth = 6) + 
+      geom_line(aes(Temp, .fitted), col = 'violet', linewidth = 6) + 
       theme_classic(base_size = 20) + 
       theme(
         axis.title = element_text(size = 24),  
