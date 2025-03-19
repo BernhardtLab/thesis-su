@@ -3,6 +3,11 @@
 #everything but 42 is gr sat and good
 #for 42, need to do gr, but currently not working
 
+allrfu <- read_csv("data/tpc_processed_all_rfus.csv") %>% 
+  mutate(rfu = as.numeric(RFU)) %>%
+  mutate(log_rfu = log(RFU)) 
+
+
 allrfu2 <- allrfu %>% 
   filter(treatment != "blank_blank")
 
@@ -70,6 +75,146 @@ View(mock_ouput)
 mock_ouput <- mock_ouput %>% 
   separate(col = unique_well, into = c("plate", "well", "tpctemp"), sep = "_") %>% 
   unite(plate, well, col = "unique_well", sep = "_")
+
+
+m2 <- mock_ouput %>% 
+  distinct()
+
+
+
+# Joey fitting tpcs -------------------------------------------------------
+
+get_topt <- function(df){
+  grfunc<-function(x){
+    -nbcurve(x, z = df$z[[1]],w = df$w[[1]],a = df$a[[1]],b = df$b[[1]])
+  }
+  optinfo<-optim(c(x=df$z[[1]]),grfunc)
+  opt <-c(optinfo$par[[1]])
+  maxgrowth <- c(-optinfo$value)
+  results <- data.frame(topt = opt, rmax = maxgrowth)
+  return(results)
+}
+
+get_tmax <- function(df){
+  uniroot.all(function(x) nbcurve(x, z = df$z[[1]],w = df$w[[1]],a = df$a[[1]], b = df$b[[1]]),c(30,150))
+}
+
+get_tmin <- function(df){
+  uniroot.all(function(x) nbcurve(x, z = df$z[[1]],w = df$w[[1]],a = df$a[[1]], b = df$b[[1]]),c(-40,25))
+}
+
+
+nbcurve<-function(temp,z,w,a,b){
+  res<-a*exp(b*temp)*(1-((temp-z)/(w/2))^2)
+  res
+}
+
+prediction_function <- function(df) {
+  tpc <-function(x){
+    res<-(df$a[[1]]*exp(df$b[[1]]*x)*(1-((x-df$z[[1]])/(df$w[[1]]/2))^2))
+    res
+  }
+  
+  pred <- function(x) {
+    y <- tpc(x)
+  }
+  
+  x <- seq(0, 50, by = 0.1)
+  
+  preds <- sapply(x, pred)
+  preds <- data.frame(x, preds) %>% 
+    dplyr::rename(temperature = x, 
+                  growth = preds)
+}
+
+
+m2 %>% 
+  mutate(temperature = as.numeric(tpctemp)) %>% 
+  ggplot(aes(x = temperature, y = mu, color = treatment)) + geom_point() +
+  facet_wrap(~ treatment)
+
+
+m3 <- m2 %>% 
+  mutate(temp = as.numeric(tpctemp)) %>% 
+  filter(treatment == "6F_1")
+
+m3 %>% 
+  ggplot(aes(x = temp, y = mu)) + geom_point()
+
+
+
+fit1 <- nlsLM(mu ~ a*exp(b*temp)*(1-((temp-z)/(w/2))^2),
+        data = m3,
+        start= list(z= 25,w= 25,a= 0.2, b= 0.1),
+        lower = c(z = -20, w= 0, a = -0.2, b = 0),
+        upper = c(z = 40, w= 120,a =  2, b = 2),
+        control = nls.control(maxiter=1024, minFactor=1/204800000))
+
+
+out_1 <- tidy(fit1) %>% 
+  select(estimate, term) %>%  
+  spread(key = term, value = estimate)
+
+# get_topt(out_1) #36.6
+# get_tmin(out_1) #19.1
+# get_tmax(out_1) #42.9
+
+preds_ind10 <- prediction_function(out_1)
+
+
+m3 %>% 
+  ggplot(aes(x = temp, y = mu)) + geom_point() +
+  geom_line(aes(x = temperature, y = growth), data = preds_ind10) +
+  ylim(-1, 1.5)
+
+
+
+
+
+fitting_function <- function(df) {
+  
+  fit1 <- nlsLM(mu ~ a*exp(b*temp)*(1-((temp-z)/(w/2))^2),
+                data = df,
+                start= list(z= 25,w= 25,a= 0.2, b= 0.1),
+                lower = c(z = -20, w= 0, a = -0.2, b = 0),
+                upper = c(z = 40, w= 120,a =  2, b = 2),
+                control = nls.control(maxiter=1024, minFactor=1/204800000))
+  
+  out_1 <- tidy(fit1) %>% 
+    select(estimate, term) %>%  
+    spread(key = term, value = estimate)
+  
+  preds_ind10 <- prediction_function(out_1)
+  
+  topt <- get_topt(out_1)
+  tmin <- get_tmin(out_1)
+  tmax <- get_tmax(out_1)
+  
+  output <- bind_cols(temp = preds_ind10$temperature, predicted_growth = preds_ind10$growth, topt = topt, tmax = tmax)
+  return(output)
+  
+}
+
+
+df_split <- m2 %>% 
+  mutate(temp = as.numeric(tpctemp)) %>% 
+  split(.$treatment)
+
+
+output_all <- df_split %>% 
+  map_df(fitting_function, .id = "treatment")
+
+write_csv(output_all, "data/output-norberg.csv")
+
+output_all %>% 
+  separate(col = treatment, into = c("incubator", "flask"), sep = "_") %>%
+  ggplot(aes(x = temp, y = predicted_growth, color = incubator)) + geom_line() +
+  ylim(-1, 2) 
+ggsave("figures/predicted_growth.png", width = 10, height = 8)
+
+
+
+
 
 #making tpc-------------------------
 library(tidyverse)
