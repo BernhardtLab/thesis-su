@@ -44,3 +44,4 @@ output
 
 #Skipping iteration 96 due to missing growth rate results
 #Error in iteration 96 : arguments imply differing number of rows: 0, 1
+print(str(growth_results))
