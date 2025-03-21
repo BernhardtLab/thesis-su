@@ -133,3 +133,95 @@ summary(tbread_anova)
 tukey_result <- TukeyHSD(tbread_anova)
 print(tukey_result)
 #significant p values: 30C-14C, 48F-14C, 6F-30C
+
+#effect sizes for significant pairs
+library(rstatix)  # For Cohen's d calculation
+
+# Perform Tukey's HSD test
+tukey_result <- TukeyHSD(anova_result)
+print(tukey_result)
+
+# Extract the Tukey results into a dataframe
+tukey_df <- as.data.frame(tukey_result$incubator) %>%
+  rownames_to_column(var = "comparison") %>%
+  filter(`p adj` < 0.05)  # Select only significant pairs
+
+#Cohen's d for significant pairs
+#install.packages("rstatix")
+library(rstatix)
+effect_sizes <- tukey_df %>%
+  mutate(
+    group1 = sub("-.*", "", comparison),  # Extract first group
+    group2 = sub(".*-", "", comparison)   # Extract second group
+  ) %>%
+  rowwise() %>%
+  mutate(
+    d = cohens_d(
+      output_norberg3 %>% filter(incubator %in% c(group1, group2)), 
+      t_breadth ~ incubator
+    )$effsize
+  ) %>%
+  select(comparison, d)
+
+View(effect_sizes)
+#Large effects; need work on interpretation
+
+
+# r max -------------------------------------------------------------------
+#check for normality
+#shapiro on output_norberg2 was being weird, trouble shooting - making a smaller df with unique r max values
+unique_rmax_df <- output_norberg2 %>%
+  distinct(rmax, .keep_all = TRUE)
+
+unique_rmax_df %>% 
+  filter(incubator == "14C") %>% 
+  pull(rmax) %>%  
+  shapiro.test() #W = 0.82612, p-value = 0.0540
+unique_rmax_df %>% 
+  filter(incubator == "30C") %>% 
+  pull(rmax) %>%  
+  shapiro.test() #W = 0.94799, p-value = 0.6909
+unique_rmax_df %>% 
+  filter(incubator == "6F") %>% 
+  pull(rmax) %>%  
+  shapiro.test() #W = 0.90803, p-value = 0.3404
+unique_rmax_df %>% 
+  filter(incubator == "48F") %>% 
+  pull(rmax) %>%  
+  shapiro.test() #W = 0.89391, p-value = 0.2544
+
+#ANOVA
+#test for variance
+leveneTest(rmax ~ incubator, data = unique_rmax_df)
+#homogeneity of variances is violated
+
+#Welch’s ANOVA is a robust alternative to ANOVA that does not assume equal variances
+oneway.test(rmax ~ incubator, data = unique_rmax_df, var.equal = FALSE)
+#F = 15.797, num df = 3.000, denom df = 15.315, p-value = 5.944e-05
+#sig diff between r max among incubators
+
+#post hoc: Games Howell
+games_howell_results <- unique_rmax_df %>%
+  games_howell_test(rmax ~ incubator)
+View(games_howell_results)
+#significant pairs: 14C-30C, 14C-48F, 14C-6F
+
+
+# summary table -------------------------------------------------------------------
+output_norberg2
+
+rmax_df <- data.frame(output_norberg2$incubator, )
+
+avg_rmax__tmax_df <- output_norberg2 %>%
+  group_by(incubator) %>%
+  summarise(
+    avg_rmax = mean(rmax, na.rm = TRUE), 
+    avg_tmax = mean(tmax, na.rm = TRUE))
+
+avg_t_bread <- output_norberg3 %>% 
+  group_by(incubator) %>% 
+  summarise(
+    avg_t_breadth = mean(t_breadth, na.rm = TRUE))
+
+sum_df <- left_join(avg_rmax__tmax_df, avg_t_bread)
+
