@@ -208,8 +208,6 @@ View(games_howell_results)
 
 
 # summary table -------------------------------------------------------------------
-output_norberg2
-
 rmax_df <- data.frame(output_norberg2$incubator, )
 
 avg_rmax__tmax_df <- output_norberg2 %>%
@@ -225,3 +223,10 @@ avg_t_bread <- output_norberg3 %>%
 
 sum_df <- left_join(avg_rmax__tmax_df, avg_t_bread)
 
+
+
+# tradeoff ----------------------------------------------------------------
+tradeoff_df <- left_join(output_norberg3, unique_rmax_df)
+
+tradeoff_df %>% 
+  ggplot(aes(rmax, t_breadth, colour = incubator)) + geom_point()
