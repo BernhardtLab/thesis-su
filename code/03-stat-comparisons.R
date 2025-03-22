@@ -7,6 +7,15 @@ output_norberg2 <- output_norberg %>%
   separate(col = treatment, into = c("incubator", "flask"), sep = "_")
 View(output_norberg2)
 
+output_norberg2 %>% 
+  rename("Treatment" = "incubator") %>% 
+  ggplot(aes(temp, predicted_growth, colour = Treatment)) + 
+  geom_line() + 
+  ylim(0, 1.5) + 
+  theme_minimal() + 
+  xlab("Temperature") + 
+  ylab("Predicted growth")
+
 # constants at 14 and 30 deg ----------------------------------------------
 ###14 deg
 t14C_14deg <- output_norberg2 %>%
@@ -223,10 +232,66 @@ avg_t_bread <- output_norberg3 %>%
 
 sum_df <- left_join(avg_rmax__tmax_df, avg_t_bread)
 
-
-
 # tradeoff ----------------------------------------------------------------
 tradeoff_df <- left_join(output_norberg3, unique_rmax_df)
 
 tradeoff_df %>% 
   ggplot(aes(rmax, t_breadth, colour = incubator)) + geom_point()
+
+
+# constant vs fluctuating -------------------------------------------------
+#does fluctauating in general have an effect (C vs F)
+#r max
+unique_rmax_df2 <- unique_rmax_df %>% 
+  separate(incubator, into = c("num", "stable"), sep = "(?<=\\d)(?=[A-Za-z])", remove = FALSE)
+
+unique_rmax_df2 %>% 
+  filter(stable == "C") %>% 
+  pull(rmax) %>%  
+  shapiro.test() #W = 0.91591, p-value = 0.1449
+unique_rmax_df2 %>% 
+  filter(stable == "F") %>% 
+  pull(rmax) %>%  
+  shapiro.test() #W = 0.94324, p-value = 0.3907
+
+leveneTest(rmax ~ stable, data = unique_rmax_df2) #homogeneity of variances is violated
+oneway.test(rmax ~ stable, data = unique_rmax_df2, var.equal = FALSE) #F = 8.6128, num df = 1.000, denom df = 18.914, p-value = 0.008531
+
+
+# t max -------------------------------------------------------------------
+#usimg r max as basis
+unique_tmax_df <- output_norberg2 %>%
+  distinct(tmax, .keep_all = TRUE)
+
+unique_tmax_df %>% 
+  filter(incubator == "14C") %>% 
+  pull(tmax) %>%  
+  shapiro.test() #W = 0.91431, p-value = 0.3854
+unique_tmax_df %>% 
+  filter(incubator == "30C") %>% 
+  pull(tmax) %>%  
+  shapiro.test() #W = 0.94291, p-value = 0.6399
+unique_tmax_df %>% 
+  filter(incubator == "6F") %>% 
+  pull(tmax) %>%  
+  shapiro.test() #W = 0.84492, p-value = 0.08459
+unique_tmax_df %>% 
+  filter(incubator == "48F") %>% 
+  pull(tmax) %>%  
+  shapiro.test() #W = 0.96814, p-value = 0.883
+
+#ANOVA
+#test for variance
+leveneTest(tmax ~ incubator, data = unique_tmax_df)
+#homogeneity of variances is met
+
+#ANOVA
+tmax_anova <- aov(tmax ~ incubator, data = unique_tmax_df, var.equal = FALSE)
+summary(tmax_anova)
+#F = 0.863, num df = 3.000, denom df = 28, p-value = 0.472
+#NO sig diff between t max among incubators
+
+
+
+
+
