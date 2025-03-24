@@ -122,6 +122,17 @@ all_rfus_3 %>%
   facet_wrap( ~ temp, scales = "free") +
   ggtitle("RFUs")
 
+all_rfus_3 %>% 
+  rename("Treatment" = "temp_treatment") %>% 
+  ggplot(aes(days, RFU, colour = Treatment, group = well_id)) + 
+  geom_line() +
+  facet_wrap( ~ temp, scales = "free") +
+  theme_minimal() + 
+  theme(
+    panel.grid = element_blank(),  # Removes all grid lines
+    strip.text = element_text(face = "bold")  # Makes facet labels (temp) bold
+  )
+
 
 # all_rfus_3 %>% 
 #   ggplot(aes(x = days, y = RFU, color = temp_treatment, group = well_id)) + 

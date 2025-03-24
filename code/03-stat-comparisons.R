@@ -14,8 +14,11 @@ output_norberg2 %>%
   ylim(0, 1.5) + 
   theme_minimal() + 
   xlab("Temperature") + 
-  ylab("Predicted growth")
-
+  ylab("Predicted growth") + 
+  theme(
+    panel.grid = element_blank(),  # Removes all grid lines
+    strip.text = element_text(face = "bold")  # Makes facet labels (temp) bold
+  )
 # constants at 14 and 30 deg ----------------------------------------------
 ###14 deg
 t14C_14deg <- output_norberg2 %>%
