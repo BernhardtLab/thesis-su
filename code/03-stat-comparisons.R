@@ -19,6 +19,43 @@ output_norberg2 %>%
     panel.grid = element_blank(),  # Removes all grid lines
     strip.text = element_text(face = "bold")  # Makes facet labels (temp) bold
   )
+
+output_norberg2 %>% 
+  rename("Treatment" = "incubator") %>% 
+  ggplot(aes(temp, predicted_growth, colour = Treatment)) + 
+  geom_point() + 
+  ylim(0, 1.5) + 
+  theme_minimal() + 
+  facet_wrap(~Treatment)
+
+output_norberg2 %>% 
+  filter(incubator == "14C") %>%
+  rename("Treatment" = "incubator") %>% 
+  ggplot(aes(temp, predicted_growth, colour = flask)) + 
+  geom_point(size = 0.1) + 
+  ylim(0, 1.5) + 
+  theme_minimal() + 
+  facet_wrap(~Treatment)
+
+output_norberg2 %>% 
+  rename(Treatment = incubator, 
+         Growth = predicted_growth, 
+         Temperature = temp) %>% 
+  ggplot(aes(Temperature, Growth, colour = flask)) + 
+  geom_line(size = 0.1) + 
+  ylim(0, 1.5) + 
+  theme_minimal() + 
+  facet_wrap(~Treatment)
+
+output_norberg2 %>% 
+  rename(Treatment = incubator, 
+         Growth = predicted_growth, 
+         Temperature = temp) %>% 
+  ggplot(aes(Temperature, Growth, colour = Treatment)) + 
+  geom_point(size = 0.01) + 
+  ylim(0, 1.5) + 
+  theme_minimal() 
+
 # constants at 14 and 30 deg ----------------------------------------------
 ###14 deg
 t14C_14deg <- output_norberg2 %>%
