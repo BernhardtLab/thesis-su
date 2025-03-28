@@ -126,3 +126,29 @@ rmax_games_howell_results <- out_nor_6 %>%
   games_howell_test(rmax ~ period_fluctuation)
 View(rmax_games_howell_results)
 #48 has a significantly higher rmax than inf (p = 0.009, estimate = 0.0776)
+
+# T opt -------------------------------------------------------------------
+#test for normality
+out_nor_6 %>%
+  filter(period_fluctuation == "6") %>% 
+  pull(topt) %>%  
+  shapiro.test()#W = 0.90412, p-value = 0.3145 #matches line 351 of 03-stat-comaprsions
+out_nor_6 %>%
+  filter(period_fluctuation == "48")%>% 
+  pull(topt) %>%  
+  shapiro.test() #W = 0.89063, p-value = 0.2372 #matches
+out_nor_6 %>%
+  filter(period_fluctuation == "inf")%>% 
+  pull(topt) %>%  
+  shapiro.test() #W = 0.95299, p-value = 0.5384
+
+leveneTest(topt ~ period_fluctuation, data = out_nor_6) #p = 0.02376
+
+#KW
+kruskal.test(topt ~ period_fluctuation, data = out_nor_6)
+#Kruskal-Wallis chi-squared = 0.5, df = 2, p-value = 0.7788
+
+#Welch ANOVA
+oneway.test(topt ~ period_fluctuation, data = out_nor_6, var.equal = FALSE)
+#F = 0.10312, num df = 2.000, denom df = 13.706, p-value = 0.9027
+#no sig
