@@ -52,6 +52,75 @@ t.test(t14C_30deg$predicted_growth, t30C_30deg$predicted_growth) #p-value = 1
 t.test(t14C_30deg$predicted_growth, t30C_30deg$predicted_growth, alternative = "greater") #p-value = 0.5
 #preds: no sig diff between 14C and 30C at 30 deg
 
+#graphing with chat
+# Combine the data for plotting
+library(ggpubr)
+# Load required package
+library(ggpubr)
+
+# Prepare data
+preds_plot_data <- output_norberg2 %>%
+  filter(incubator %in% c("14C", "30C")) %>% 
+  filter(temp %in% c(14.0, 30.0)) %>%
+  select(incubator, temp, flask, predicted_growth) %>%
+  mutate(temp = factor(temp, levels = c(14, 30)))  # Ensure proper ordering
+
+# Define comparisons for significance testing at each temperature separately
+preds_comparisons <- list(
+  c("14C", "30C")  # Compare 14C vs. 30C at each temp
+)
+
+# Plot
+ggplot(preds_plot_data, aes(x = temp, y = predicted_growth, fill = incubator)) +
+  geom_boxplot(alpha = 0.6, outlier.shape = NA) +  # Boxplot without outliers
+  geom_jitter(position = position_jitterdodge(jitter.width = 0.2), alpha = 0.5) +  # Scatter points
+  stat_compare_means(aes(group = incubator), 
+                     comparisons = preds_comparisons, 
+                     method = "t.test", 
+                     label = "p.signif") +  # Adds significance stars
+  theme_minimal() +
+  labs(
+    x = "Temperature (°C)",
+    y = "Predicted Growth",
+    fill = "Treatment"
+  ) +
+  scale_fill_manual(values = c("14C" = "#145da0", "30C" = "#bc1823")) +  # Custom colors
+  facet_wrap(~temp)  # Facet by temperature to compare within each temp
+
+# Load required package
+library(ggpubr)
+
+# Prepare data
+preds_plot_data <- output_norberg2 %>%
+  filter(incubator %in% c("14C", "30C")) %>% 
+  filter(temp %in% c(14.0, 30.0)) %>%
+  select(incubator, temp, flask, predicted_growth) %>%
+  mutate(temp = factor(temp, levels = c(14, 30)))  # Ensure proper ordering
+
+# Manually define p-values
+p_values <- data.frame(
+  temp = factor(c(14, 30)),  # Ensure matching factor levels
+  group1 = "14C",
+  group2 = "30C",
+  p = c(1.575e-10, 0.5),  # Your t-test results
+  label = c("***", "ns")  # Significance stars
+)
+
+# Plot with manual significance labels
+ggplot(preds_plot_data, aes(x = incubator, y = predicted_growth, fill = incubator)) +
+  geom_boxplot(alpha = 0.6, outlier.shape = NA) +  # Boxplot without outliers
+  geom_jitter(position = position_jitterdodge(jitter.width = 0.2), alpha = 0.5) +  # Scatter points
+  facet_wrap(~temp) +  # Separate panels for each temp
+  theme_minimal() +
+  labs(
+    x = "Incubator",
+    y = "Predicted Growth",
+    fill = "Incubator"
+  ) +
+  scale_fill_manual(values = c("14C" = "#145da0", "30C" = "#bc1823")) +  # Custom colors
+  geom_text(data = p_values, aes(x = 1.5, y = max(preds_plot_data$predicted_growth) + 0.1, label = label), inherit.aes = FALSE)
+
+
 # actual constants at 14 deg and 30 deg -----------------------------------
 actual <- read.csv("data/growthtool-gdat-sum.csv")
 
@@ -96,3 +165,33 @@ shapiro.test(act_t30C_30deg$mu) #W = 0.8792, p-value = 0.00801
 wilcox.test(act_t14C_30deg$mu, act_t30C_30deg$mu) #W = 507, p-value = 1.295e-06
 #30 different
 
+#graphing with chat
+# Prepare data
+act_plot_data <- actual %>%
+  filter(incubator %in% c("14C", "30C")) %>% 
+  filter(temp %in% c(14.0, 30.0)) %>%
+  select(incubator, temp, flask, mu) %>%
+  mutate(temp = factor(temp, levels = c(14, 30)))  # Ensure proper ordering
+
+# Manually define p-values for t-test and Wilcoxon
+p_values <- data.frame(
+  temp = factor(c(14, 30)),  # Ensure matching factor levels
+  group1 = "14C",
+  group2 = "30C",
+  p = c(1.06e-12, 1.295e-06),  # t-test for 14°C, Wilcoxon for 30°C
+  label = c("***", "***")  # Significance stars
+)
+
+# Plot with manual significance labels
+ggplot(act_plot_data, aes(x = incubator, y = mu, fill = incubator)) +
+  geom_boxplot(alpha = 0.6, outlier.shape = NA) +  # Boxplot without outliers
+  geom_jitter(position = position_jitterdodge(jitter.width = 0.2), alpha = 0.5) +  # Scatter points
+  facet_wrap(~temp) +  # Separate panels for each temp
+  theme_minimal() +
+  labs(
+    x = "Incubator",
+    y = "Mu",
+    fill = "Incubator"
+  ) +
+  scale_fill_manual(values = c("14C" = "#145da0", "30C" = "#bc1823")) +  # Custom colors
+  geom_text(data = p_values, aes(x = 1.5, y = max(act_plot_data$mu) + 0.1, label = label), inherit.aes = FALSE)
