@@ -114,7 +114,7 @@ ggplot(preds_plot_data, aes(x = incubator, y = predicted_growth, fill = incubato
   theme_minimal() +
   labs(
     x = "Incubator",
-    y = "Predicted Growth",
+    y = "Predicted growth",
     fill = "Incubator"
   ) +
   scale_fill_manual(values = c("14C" = "#145da0", "30C" = "#bc1823")) +  # Custom colors
@@ -190,7 +190,7 @@ ggplot(act_plot_data, aes(x = incubator, y = mu, fill = incubator)) +
   theme_minimal() +
   labs(
     x = "Incubator",
-    y = "Mu",
+    y = "Predicted growth",
     fill = "Incubator"
   ) +
   scale_fill_manual(values = c("14C" = "#145da0", "30C" = "#bc1823")) +  # Custom colors
