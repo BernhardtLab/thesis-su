@@ -332,6 +332,43 @@ summary(tmax_anova)
 #NO sig diff between t max among incubators
 
 
+# t opt -------------------------------------------------------------------
+#usimg r max as basis
+unique_topt_df <- output_norberg2 %>%
+  distinct(topt, .keep_all = TRUE)
 
+unique_topt_df %>% 
+  filter(incubator == "14C") %>% 
+  pull(topt) %>%  
+  shapiro.test() #W = 0.96107, p-value = 0.8203
+unique_topt_df %>% 
+  filter(incubator == "30C") %>% 
+  pull(topt) %>%  
+  shapiro.test() #W = 0.94653, p-value = 0.6762
+unique_topt_df %>% 
+  filter(incubator == "6F") %>% 
+  pull(topt) %>%  
+  shapiro.test() #W = 0.90412, p-value = 0.3145
+unique_topt_df %>% 
+  filter(incubator == "48F") %>% 
+  pull(topt) %>%  
+  shapiro.test() #W = 0.89063, p-value = 0.2372
 
+#ANOVA
+#test for variance
+library(car)
+leveneTest(tmax ~ incubator, data = unique_tmax_df)
+#homogeneity of variances is met
+
+#ANOVA
+topt_anova <- aov(topt ~ incubator, data = unique_topt_df, var.equal = FALSE)
+summary(topt_anova)
+#F = 3.956, p = 0.018
+#sig diff between t max among incubators
+
+#post hoc
+#Tukey's HSD test 
+topt_tukey_result <- TukeyHSD(topt_anova)
+print(topt_tukey_result)
+#only sig is 30C>14C, p = 0.0099190
 

@@ -239,7 +239,25 @@ tradeoff_df %>%
 
 
 # T opt -------------------------------------------------------------------
-
+unique_topt_df %>% 
+  ggplot(aes(x = incubator, y = topt, fill = incubator)) + 
+  # Create a boxplot
+  geom_boxplot(alpha = 0.6, outlier.shape = NA) +  
+  # Add scatter points for better visualization
+  geom_jitter(position = position_jitterdodge(jitter.width = 0), alpha = 0.5) +  
+  # Add significance annotation for the 30C vs. 14C difference
+  geom_signif(comparisons = list(c("30C", "14C")), 
+              annotations = "*",  # Or "**" for p < 0.01
+              tip_length = 0.02, 
+              textsize = 6) +
+  # Basic theme and labels
+  theme_minimal() +
+  labs(
+    x = "Treatment",
+    y = "T opt",
+    fill = "Treatment"
+  ) +
+  scale_fill_manual(values = c("14C" = "#145da0", "30C" = "#bc1823", "6F" = "#ff8210", "48F" = "#800080"))
 
 # T max -------------------------------------------------------------------
 unique_tmax_df %>% 
