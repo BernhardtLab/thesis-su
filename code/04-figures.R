@@ -4,6 +4,22 @@ output_norberg2 <- output_norberg %>%
   separate(col = treatment, into = c("incubator", "flask"), sep = "_")
 
 # tpc ---------------------------------------------------------------------
+
+all_rfus_3 %>% 
+  rename(Treatment = temp_treatment) %>% 
+  ggplot(aes(x = days, y = RFU, colour = Treatment, group = well_id)) + 
+  geom_line() +
+  facet_wrap(~ temp, scales = "free") +
+  theme_minimal() + 
+  theme(
+    panel.grid = element_blank(),  # Removes all grid lines
+    strip.text = element_text(face = "bold")  # Makes facet labels bold
+  ) + 
+  scale_color_manual(values = c("14C" = "#145da0", 
+                                "30C" = "#bc1823", 
+                                "6F" = "#ff8210", 
+                                "48F" = "#800080", 
+                                "blank" = "grey"))  
 output_norberg2 %>% 
   rename(Treatment = incubator, 
          Growth = predicted_growth, 
@@ -21,7 +37,11 @@ output_norberg2 %>%
   ggplot(aes(Temperature, Growth, colour = Treatment)) + 
   geom_point(size = 0.01) + 
   ylim(0, 1.5) + 
-  theme_minimal() 
+  theme_minimal() +
+  scale_color_manual(values = c("14C" = "#145da0", 
+                                "30C" = "#bc1823", 
+                                "6F" = "#ff8210", 
+                                "48F" = "#800080"))  
 
 # local adaptation --------------------------------------------------------
 #preds
@@ -303,6 +323,7 @@ output_norberg_f3 <- output_norberg_f %>%
 output_norberg_f4 <- left_join(output_norberg_f, output_norberg_f3)
 View(output_norberg_f4)
 
+#T breadth#######################################################################
 output_norberg_f4 %>% 
   ggplot(aes(x = period_fluctuation, y = t_breadth, colour = incubator)) + 
   geom_point() + 
@@ -312,6 +333,54 @@ output_norberg_f4 %>%
     y = "T breadth",
     colour = "Treatment")
 
+output_norberg_f4 %>% 
+  mutate(period_fluctuation = factor(period_fluctuation, levels = c("6", "48", "inf"))) %>%  # Set order
+  ggplot(aes(x = period_fluctuation, y = t_breadth, colour = incubator)) + 
+  geom_point() + 
+  geom_smooth(method = "lm", se = FALSE) +
+  theme_minimal() + 
+  labs(
+    x = "Fluctuation Period (hours)",
+    y = "T Breadth",
+    colour = "Treatment"
+  )
+
+output_norberg_f4 %>% 
+  mutate(period_fluctuation = factor(period_fluctuation, levels = c("6", "48", "inf"))) %>%  # Set x-axis order
+  ggplot(aes(x = period_fluctuation, y = t_breadth, fill = incubator)) + 
+  geom_boxplot(alpha = 0.6, trim = FALSE) +  # Violin plot with smooth density
+  geom_jitter(position = position_jitterdodge(jitter.width = 0), alpha = 0.5) +  # Add scatter points
+  theme_minimal() + 
+  scale_fill_manual(values = c("14C" = "#145da0", 
+                               "30C" = "#bc1823", 
+                               "6F" = "#ff8210", 
+                               "48F" = "#800080")) +  # Custom colors
+  labs(
+    x = "Fluctuation Period (hours)",
+    y = "T Breadth",
+    fill = "Treatment"
+  )
+
+
+output_norberg_f4 %>% 
+  ggplot(aes(x = period_fluctuation, y = t_breadth, fill = period_fluctuation)) + 
+  # Create a boxplot
+  geom_boxplot(alpha = 0.6, outlier.shape = NA) +  
+  # Add scatter points for better visualization
+  geom_jitter(position = position_jitterdodge(jitter.width = 0.2), alpha = 0.5) +  
+  # Basic theme and labels
+  theme_minimal() +
+  labs(
+    x = "Fluctuation Period (hours)",
+    y = "T Breadth",
+    fill = "Fluctuation Period"
+  ) +
+  scale_fill_manual(values = c("14C" = "#145da0", 
+                               "30C" = "#bc1823", 
+                               "6F" = "#ff8210", 
+                               "48F" = "#800080"))  # Custom colors
+
+#rmax###########################################################################
 output_norberg_f4 %>% 
   ggplot(aes(x = period_fluctuation, y = rmax, colour = incubator)) + 
   geom_point() + 

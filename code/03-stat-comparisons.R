@@ -225,7 +225,7 @@ unique_rmax_df <- output_norberg2 %>%
 unique_rmax_df %>% 
   filter(incubator == "14C") %>% 
   pull(rmax) %>%  
-  shapiro.test() #W = 0.82612, p-value = 0.0540
+  shapiro.test() #W = 0.82612, p-value = 0.05408
 unique_rmax_df %>% 
   filter(incubator == "30C") %>% 
   pull(rmax) %>%  
@@ -326,7 +326,7 @@ leveneTest(tmax ~ incubator, data = unique_tmax_df)
 #homogeneity of variances is met
 
 #ANOVA
-tmax_anova <- aov(tmax ~ incubator, data = unique_tmax_df, var.equal = FALSE)
+tmax_anova <- aov(tmax ~ incubator, data = unique_tmax_df)
 summary(tmax_anova)
 #F = 0.863, num df = 3.000, denom df = 28, p-value = 0.472
 #NO sig diff between t max among incubators

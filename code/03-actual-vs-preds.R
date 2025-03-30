@@ -90,6 +90,6 @@ View(comparison)
 write_csv(comparison, "data/actual_preds_comparison.csv")
 
 #look which are no sig
-comparison %>% filter(significance == "No")
+comparison %>% filter(significance == "No") %>% View()
 #four pairs, all at 42 deg
 
