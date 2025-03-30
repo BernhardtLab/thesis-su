@@ -4,7 +4,7 @@ output_norberg2 <- output_norberg %>%
   separate(col = treatment, into = c("incubator", "flask"), sep = "_")
 
 # tpc ---------------------------------------------------------------------
-
+all_rfus_3 <- read.csv("data/tpc_processed_all_rfus.csv")
 all_rfus_3 %>% 
   rename(Treatment = temp_treatment) %>% 
   ggplot(aes(x = days, y = RFU, colour = Treatment, group = well_id)) + 
@@ -41,7 +41,11 @@ output_norberg2 %>%
   scale_color_manual(values = c("14C" = "#145da0", 
                                 "30C" = "#bc1823", 
                                 "6F" = "#ff8210", 
-                                "48F" = "#800080"))  
+                                "48F" = "#800080")) + 
+  labs(
+    x = "Temperature (°C)",
+    y = "Growth rate"
+  )
 
 # local adaptation --------------------------------------------------------
 #preds
@@ -62,19 +66,27 @@ p_values <- data.frame(
 
 # Plot with manual significance labels
 ggplot(preds_plot_data, aes(x = incubator, y = predicted_growth, fill = incubator)) +
-  geom_boxplot(alpha = 0.6, outlier.shape = NA) +  # Boxplot without outliers
-  geom_jitter(position = position_jitterdodge(jitter.width = 0.2), alpha = 0.5) +  # Scatter points
+  geom_boxplot(alpha = 1, outlier.shape = NA) +  # Boxplot without outliers
+  geom_jitter(position = position_jitterdodge(jitter.width = 0.2), alpha = 1) +  # Scatter points
   facet_wrap(~temp) +  # Separate panels for each temp
   theme_minimal() +
   labs(
-    x = "Incubator",
-    y = "Predicted growth",
-    fill = "Incubator"
+    x = "Treatment",
+    y = "Growth rate",
+    fill = "Treatment"
   ) +
   scale_fill_manual(values = c("14C" = "#145da0", "30C" = "#bc1823")) +  # Custom colors
   geom_text(data = p_values, aes(x = 1.5, y = max(preds_plot_data$predicted_growth) + 0.1, label = label), inherit.aes = FALSE)
 
 #actual
+actual <- read.csv("data/growthtool-gdat-sum.csv")
+
+actual <- actual %>% 
+  separate(col = treatment, into = c("incubator", "flask"), sep = "_") %>% 
+  separate(col = unique_well, into = c("plate", "well", "tpctemp")) %>% 
+  unite("unique_well", "plate", "well", sep = "_") %>% 
+  rename("temp" = "tpctemp")
+
 act_plot_data <- actual %>%
   filter(incubator %in% c("14C", "30C")) %>% 
   filter(temp %in% c(14.0, 30.0)) %>%
@@ -92,14 +104,14 @@ p_values <- data.frame(
 
 # Plot with manual significance labels
 ggplot(act_plot_data, aes(x = incubator, y = mu, fill = incubator)) +
-  geom_boxplot(alpha = 0.6, outlier.shape = NA) +  # Boxplot without outliers
-  geom_jitter(position = position_jitterdodge(jitter.width = 0.2), alpha = 0.5) +  # Scatter points
+  geom_boxplot(alpha = 1, outlier.shape = NA) +  # Boxplot without outliers
+  geom_jitter(position = position_jitterdodge(jitter.width = 0.2), alpha = 1) +  # Scatter points
   facet_wrap(~temp) +  # Separate panels for each temp
   theme_minimal() +
   labs(
-    x = "Incubator",
-    y = "Predicted growth",
-    fill = "Incubator"
+    x = "Treatment",
+    y = "Growth rate",
+    fill = "Treatment"
   ) +
   scale_fill_manual(values = c("14C" = "#145da0", "30C" = "#bc1823")) +  # Custom colors
   geom_text(data = p_values, aes(x = 1.5, y = max(act_plot_data$mu) + 0.1, label = label), inherit.aes = FALSE)
@@ -211,9 +223,9 @@ output_norberg2 %>%
 output_norberg3 %>%
   ggplot(aes(x = incubator, y = t_breadth, fill = incubator)) +
   # Create a boxplot
-  geom_boxplot(alpha = 0.6, outlier.shape = NA) +  
+  geom_boxplot(alpha = 1, outlier.shape = NA) +  
   # Add scatter points for better visualization
-  geom_jitter(position = position_jitterdodge(jitter.width = 0.2), alpha = 0.5) +  
+  geom_jitter(position = position_jitterdodge(jitter.width = 0.2), alpha = 1) +  
   # Add Tukey's HSD test results with significance stars
   stat_compare_means(aes(group = incubator), comparisons = list(c("14C", "30C"), c("14C", "48F"), c("30C", "6F")), 
                      method = "t.test", label = "p.signif") +  
@@ -229,9 +241,9 @@ output_norberg3 %>%
 output_norberg2 %>%
   ggplot(aes(x = incubator, y = rmax, fill = incubator)) +
   # Create a boxplot
-  geom_boxplot(alpha = 0.6, outlier.shape = NA) +  
+  geom_boxplot(alpha = 1, outlier.shape = NA) +  
   # Add scatter points for better visualization
-  geom_jitter(position = position_jitterdodge(jitter.width = 0), alpha = 0.5) +  
+  geom_jitter(position = position_jitterdodge(jitter.width = 0), alpha = 1) +  
   # Add Tukey's HSD test results with significance stars
   stat_compare_means(aes(group = incubator), comparisons = list(c("14C", "30C"), c("14C", "48F"), c("30C", "6F")), 
                      method = "t.test", label = "p.signif") +  
@@ -254,17 +266,23 @@ tradeoff_df %>%
   theme_minimal() + 
   labs(
     x = "r max",
-    y = "T breadth",
-    colour = "Treatment")
+    y = "T breadth (°C)",
+    colour = "Treatment"
+  ) +
+  scale_color_manual(values = c("14C" = "#145da0", "30C" = "#bc1823", "6F" = "#ff8210", "48F" = "#800080"))  # Corrected to scale_color_manual()
+
 
 
 # T opt -------------------------------------------------------------------
+unique_topt_df <- output_norberg2 %>%
+  distinct(topt, .keep_all = TRUE)
+
 unique_topt_df %>% 
   ggplot(aes(x = incubator, y = topt, fill = incubator)) + 
   # Create a boxplot
-  geom_boxplot(alpha = 0.6, outlier.shape = NA) +  
+  geom_boxplot(alpha = 1, outlier.shape = NA) +  
   # Add scatter points for better visualization
-  geom_jitter(position = position_jitterdodge(jitter.width = 0), alpha = 0.5) +  
+  geom_jitter(position = position_jitterdodge(jitter.width = 0), alpha = 1) +  
   # Add significance annotation for the 30C vs. 14C difference
   geom_signif(comparisons = list(c("30C", "14C")), 
               annotations = "*",  # Or "**" for p < 0.01
@@ -274,24 +292,27 @@ unique_topt_df %>%
   theme_minimal() +
   labs(
     x = "Treatment",
-    y = "T opt",
+    y = "T opt (°C)",
     fill = "Treatment"
   ) +
   scale_fill_manual(values = c("14C" = "#145da0", "30C" = "#bc1823", "6F" = "#ff8210", "48F" = "#800080"))
 
 # T max -------------------------------------------------------------------
+unique_tmax_df <- output_norberg2 %>%
+  distinct(tmax, .keep_all = TRUE)
+
 unique_tmax_df %>% 
   ggplot(aes(x = incubator, y = tmax, fill = incubator)) + 
   # Create a boxplot
-  geom_boxplot(alpha = 0.6, outlier.shape = NA) +  
+  geom_boxplot(alpha = 1, outlier.shape = NA) +  
   # Add scatter points for better visualization
-  geom_jitter(position = position_jitterdodge(jitter.width = 0), alpha = 0.5) +  
+  geom_jitter(position = position_jitterdodge(jitter.width = 0), alpha = 1) +  
   # Since ANOVA showed no significant differences, we do not add significance stars
   # Add a basic theme and labels
   theme_minimal() +
   labs(
     x = "Treatment",
-    y = "T max",
+    y = "T max (°C)",
     fill = "Treatment"
   ) +
   scale_fill_manual(values = c("14C" = "#145da0", "30C" = "#bc1823", "6F" = "#ff8210", "48F" = "#800080"))  # Customize colors
@@ -346,23 +367,6 @@ output_norberg_f4 %>%
   )
 
 output_norberg_f4 %>% 
-  mutate(period_fluctuation = factor(period_fluctuation, levels = c("6", "48", "inf"))) %>%  # Set x-axis order
-  ggplot(aes(x = period_fluctuation, y = t_breadth, fill = incubator)) + 
-  geom_boxplot(alpha = 0.6, trim = FALSE) +  # Violin plot with smooth density
-  geom_jitter(position = position_jitterdodge(jitter.width = 0), alpha = 0.5) +  # Add scatter points
-  theme_minimal() + 
-  scale_fill_manual(values = c("14C" = "#145da0", 
-                               "30C" = "#bc1823", 
-                               "6F" = "#ff8210", 
-                               "48F" = "#800080")) +  # Custom colors
-  labs(
-    x = "Fluctuation Period (hours)",
-    y = "T Breadth",
-    fill = "Treatment"
-  )
-
-
-output_norberg_f4 %>% 
   ggplot(aes(x = period_fluctuation, y = t_breadth, fill = period_fluctuation)) + 
   # Create a boxplot
   geom_boxplot(alpha = 0.6, outlier.shape = NA) +  
@@ -378,7 +382,25 @@ output_norberg_f4 %>%
   scale_fill_manual(values = c("14C" = "#145da0", 
                                "30C" = "#bc1823", 
                                "6F" = "#ff8210", 
-                               "48F" = "#800080"))  # Custom colors
+                               "48F" = "#800080")) +  # Custom colors
+  scale_x_discrete(limits = c("6F", "48F", "inf"))  # Reorder x-axis
+
+output_norberg_f4 %>% 
+  ggplot(aes(x = period_fluctuation, y = t_breadth, fill = factor(period_fluctuation, levels = c("6", "48", "inf")))) + 
+  # Create a boxplot
+  geom_boxplot(alpha = 1, outlier.shape = NA) +  
+  # Add scatter points for better visualization
+  geom_jitter(position = position_jitterdodge(jitter.width = 0), alpha = 1) +  
+  # Basic theme and labels
+  theme_minimal() +
+  labs(
+    x = "T Breadth",
+    y = "T max (°C)",
+    fill = "Period of fluctuation"
+  ) +
+  scale_fill_manual(values = c("6" = "#ff8210", "48" = "#800080", "inf" = "#145da0")) +  # Custom colors
+  scale_x_discrete(limits = c("6", "48", "inf"))  # Reorder x-axis
+
 
 #rmax###########################################################################
 output_norberg_f4 %>% 
