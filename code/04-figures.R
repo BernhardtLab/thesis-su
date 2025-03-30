@@ -56,8 +56,8 @@ p_values <- data.frame(
   temp = factor(c(14, 30)),  # Ensure matching factor levels
   group1 = "14C",
   group2 = "30C",
-  p = c(1.575e-10, 0.5),  # Your t-test results
-  label = c("***", "ns")  # Significance stars
+  p = c(1.575e-10, 1.331e-06),  # Your t-test results
+  label = c("***", "***")  # Significance stars
 )
 
 # Plot with manual significance labels

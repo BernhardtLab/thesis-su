@@ -48,8 +48,8 @@ t30C_30deg <- output_norberg2 %>%
 shapiro.test(t30C_30deg$predicted_growth) #W = 0.97289, p-value = 0.9196
 #normal data --> t test
 
-t.test(t14C_30deg$predicted_growth, t30C_30deg$predicted_growth) #p-value = 1
-t.test(t14C_30deg$predicted_growth, t30C_30deg$predicted_growth, alternative = "greater") #p-value = 0.5
+t.test(t14C_30deg$predicted_growth, t30C_30deg$predicted_growth) #p-value = 2.662e-06
+t.test(t14C_30deg$predicted_growth, t30C_30deg$predicted_growth, alternative = "greater") #p-value = 1.331e-06
 #preds: no sig diff between 14C and 30C at 30 deg
 
 #graphing with chat
