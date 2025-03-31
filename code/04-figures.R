@@ -238,22 +238,82 @@ output_norberg3 %>%
   scale_fill_manual(values = c("14C" = "#145da0", "30C" = "#bc1823", "6F" = "#ff8210", "48F" = "#800080"))  # Customize colors
 
 # r max -------------------------------------------------------------------
-output_norberg2 %>%
-  ggplot(aes(x = incubator, y = rmax, fill = incubator)) +
-  # Create a boxplot
+# output_norberg2 %>%
+#   ggplot(aes(x = incubator, y = rmax, fill = incubator)) +
+#   geom_boxplot(alpha = 1, outlier.shape = NA) +  
+#   geom_jitter(position = position_jitterdodge(jitter.width = 0), alpha = 1) +  
+#   stat_compare_means(aes(group = incubator), comparisons = list(c("14C", "30C"), c("14C", "48F"), c("14C", "6F"),
+#                                                                 c("30C", "48F"), c("30C", "6F"), c("48F", "6F")),
+#                      method = "games_howell_test", label = "p.signif") +  
+#   theme_minimal() +
+#   labs(
+#     x = "Treatment",
+#     y = "r max",
+#     fill = "Treatment"
+#   ) +
+#   scale_fill_manual(values = c("14C" = "#145da0", "30C" = "#bc1823", "6F" = "#ff8210", "48F" = "#800080"))  
+
+#need to do Games Howell for graph
+unique_rmax_df <- output_norberg2 %>%
+  distinct(rmax, .keep_all = TRUE)
+
+#chat helps
+
+# Load necessary libraries
+library(ggplot2)
+library(dplyr)
+library(rstatix)
+library(ggsignif)
+
+# Ensure 'incubator' is a factor
+unique_rmax_df <- unique_rmax_df %>%
+  mutate(incubator = as.factor(incubator))
+
+# Perform Games-Howell test
+rmax_games_howell_results <- unique_rmax_df %>%
+  games_howell_test(rmax ~ incubator) %>%
+  mutate(significance = ifelse(p.adj < 0.05, "***", "ns"))  # Convert p-values into stars
+
+# Filter only significant results (those with adjusted p-value < 0.05)
+significant_results <- rmax_games_howell_results %>%
+  filter(p.adj < 0.05) %>%
+  select(group1, group2, significance)
+
+# Create the plot
+plot <- unique_rmax_df %>%
+  ggplot(aes(x = incubator, y = rmax, fill = incubator)) + 
   geom_boxplot(alpha = 1, outlier.shape = NA) +  
-  # Add scatter points for better visualization
-  geom_jitter(position = position_jitterdodge(jitter.width = 0), alpha = 1) +  
-  # Add Tukey's HSD test results with significance stars
-  stat_compare_means(aes(group = incubator), comparisons = list(c("14C", "30C"), c("14C", "48F"), c("30C", "6F")), 
-                     method = "t.test", label = "p.signif") +  
+  geom_jitter(position = position_jitterdodge(jitter.width = 0.2), alpha = 1) +  
   theme_minimal() +
   labs(
     x = "Treatment",
     y = "r max",
     fill = "Treatment"
   ) +
-  scale_fill_manual(values = c("14C" = "#145da0", "30C" = "#bc1823", "6F" = "#ff8210", "48F" = "#800080"))  # Customize colors
+  scale_fill_manual(values = c("14C" = "#145da0", "30C" = "#bc1823", "6F" = "#ff8210", "48F" = "#800080"))
+
+# Manually create the list of significant comparisons
+comparison_list <- list(
+  c("14C", "30C"),
+  c("14C", "48F"),
+  c("14C", "6F")
+)
+
+# Ensure annotations match the number of comparisons
+annotations <- significant_results$significance
+
+# Define staggered y-positions (adjust as needed)
+y_positions <- c(max(unique_rmax_df$rmax) + 0.05, max(unique_rmax_df$rmax) + 0.09, max(unique_rmax_df$rmax) + 0.13)
+
+# Add significance annotations from Games-Howell test with staggered brackets
+plot + 
+  geom_signif(
+    comparisons = comparison_list, 
+    annotations = annotations,  # Ensure this has the same length as comparisons
+    tip_length = 0.02, 
+    textsize = 6,
+    y_position = y_positions  # Apply staggered y-positions
+  )
 
 # tradeoff ----------------------------------------------------------------
 unique_rmax_df <- output_norberg2 %>%
@@ -355,35 +415,23 @@ output_norberg_f4 %>%
     colour = "Treatment")
 
 output_norberg_f4 %>% 
-  mutate(period_fluctuation = factor(period_fluctuation, levels = c("6", "48", "inf"))) %>%  # Set order
-  ggplot(aes(x = period_fluctuation, y = t_breadth, colour = incubator)) + 
-  geom_point() + 
-  geom_smooth(method = "lm", se = FALSE) +
-  theme_minimal() + 
-  labs(
-    x = "Fluctuation Period (hours)",
-    y = "T Breadth",
-    colour = "Treatment"
-  )
-
-output_norberg_f4 %>% 
-  ggplot(aes(x = period_fluctuation, y = t_breadth, fill = period_fluctuation)) + 
+  mutate(period_fluctuation = factor(period_fluctuation, levels = c("6", "48", "inf"))) %>%  
+  ggplot(aes(x = period_fluctuation, y = t_breadth, fill = incubator)) + 
   # Create a boxplot
-  geom_boxplot(alpha = 0.6, outlier.shape = NA) +  
+  geom_boxplot(alpha = 1, outlier.shape = NA) +  
   # Add scatter points for better visualization
-  geom_jitter(position = position_jitterdodge(jitter.width = 0.2), alpha = 0.5) +  
-  # Basic theme and labels
+  geom_jitter(position = position_jitterdodge(jitter.width = 0), alpha = 1) +  
+  # Apply minimal theme and labels
   theme_minimal() +
   labs(
-    x = "Fluctuation Period (hours)",
-    y = "T Breadth",
-    fill = "Fluctuation Period"
+    x = "Fluctuation period (hours)",
+    y = "T breadth (°C)",
+    fill = "Treatment"
   ) +
-  scale_fill_manual(values = c("14C" = "#145da0", 
-                               "30C" = "#bc1823", 
-                               "6F" = "#ff8210", 
-                               "48F" = "#800080")) +  # Custom colors
-  scale_x_discrete(limits = c("6F", "48F", "inf"))  # Reorder x-axis
+  # Customize colors like the example
+  scale_fill_manual(values = c("14C" = "#145da0", "30C" = "#bc1823", "6F" = "#ff8210", "48F" = "#800080"))
+
+
 
 output_norberg_f4 %>% 
   ggplot(aes(x = period_fluctuation, y = t_breadth, fill = factor(period_fluctuation, levels = c("6", "48", "inf")))) + 
@@ -394,11 +442,11 @@ output_norberg_f4 %>%
   # Basic theme and labels
   theme_minimal() +
   labs(
-    x = "T Breadth",
-    y = "T max (°C)",
+    x = "Fluctuation period (hours)",
+    y = "T breadth (°C)",
     fill = "Period of fluctuation"
   ) +
-  scale_fill_manual(values = c("6" = "#ff8210", "48" = "#800080", "inf" = "#145da0")) +  # Custom colors
+  scale_fill_manual(values = c("6" = "#ff8210", "48" = "#800080", "inf" = "green3")) +  # Custom colors
   scale_x_discrete(limits = c("6", "48", "inf"))  # Reorder x-axis
 
 
@@ -413,6 +461,35 @@ output_norberg_f4 %>%
     colour = "Treatment")
 
 output_norberg_f4 %>% 
+  mutate(period_fluctuation = factor(period_fluctuation, levels = c("6", "48", "inf"))) %>%  
+  ggplot(aes(x = period_fluctuation, y = rmax, fill = factor(period_fluctuation, levels = c("6", "48", "inf")))) + 
+  # Create a boxplot
+  geom_boxplot(alpha = 1, outlier.shape = NA) +  
+  # Add scatter points for better visualization
+  geom_jitter(position = position_jitterdodge(jitter.width = 0), alpha = 1) +  
+  # Apply minimal theme and labels
+  theme_minimal() +
+  labs(
+    x = "Fluctuation period (hours)",
+    y = "r max",
+    fill = "Period of fluctuation"
+  ) +
+  # Customize colors
+  scale_fill_manual(values = c("6" = "#ff8210", "48" = "#800080", "inf" = "green3")) +  
+  # Add significance annotation for the significant comparison (48-inf)
+  geom_signif(
+    comparisons = list(c("48", "inf")),
+    annotations = "*",  # Significance star
+    tip_length = 0.02, 
+    textsize = 6,
+  ) +
+  # Reorder x-axis to match the specified factor levels
+  scale_x_discrete(limits = c("6", "48", "inf"))
+
+
+
+#T opt##########################################################################
+output_norberg_f4 %>% 
   ggplot(aes(x = period_fluctuation, y = topt, colour = incubator)) + 
   geom_point() + 
   theme_minimal() + 
@@ -420,3 +497,37 @@ output_norberg_f4 %>%
     x = "Fluctuation period (hours)",
     y = "T opt",
     colour = "Treatment")
+
+output_norberg_f4 %>% 
+  mutate(period_fluctuation = factor(period_fluctuation, levels = c("6", "48", "inf"))) %>%  
+  ggplot(aes(x = period_fluctuation, y = topt, fill = incubator)) + 
+  # Create a boxplot
+  geom_boxplot(alpha = 1, outlier.shape = NA) +  
+  # Add scatter points for better visualization
+  geom_jitter(position = position_jitterdodge(jitter.width = 0), alpha = 1) +  
+  # Apply minimal theme and labels
+  theme_minimal() +
+  labs(
+    x = "Fluctuation period (hours)",
+    y = "T opt (°C)",
+    fill = "Treatment"
+  ) +
+  # Customize colors like the example
+  scale_fill_manual(values = c("14C" = "#145da0", "30C" = "#bc1823", "6F" = "#ff8210", "48F" = "#800080"))
+
+
+output_norberg_f4 %>% 
+  ggplot(aes(x = period_fluctuation, y = topt, fill = factor(period_fluctuation, levels = c("6", "48", "inf")))) + 
+  # Create a boxplot
+  geom_boxplot(alpha = 1, outlier.shape = NA) +  
+  # Add scatter points for better visualization
+  geom_jitter(position = position_jitterdodge(jitter.width = 0), alpha = 1) +  
+  # Basic theme and labels
+  theme_minimal() +
+  labs(
+    x = "Fluctuation period (hours)",
+    y = "T opt (°C)",
+    fill = "Period of fluctuation"
+  ) +
+  scale_fill_manual(values = c("6" = "#ff8210", "48" = "#800080", "inf" = "green3")) +  # Custom colors
+  scale_x_discrete(limits = c("6", "48", "inf"))
