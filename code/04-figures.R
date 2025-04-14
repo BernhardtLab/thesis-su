@@ -44,7 +44,7 @@ output_norberg2 %>%
                                 "48F" = "#800080")) + 
   labs(
     x = "Temperature (°C)",
-    y = "Growth rate"
+    y = "Growth rate (individual/day)"
   )
 
 # local adaptation --------------------------------------------------------
@@ -72,7 +72,7 @@ ggplot(preds_plot_data, aes(x = incubator, y = predicted_growth, fill = incubato
   theme_minimal() +
   labs(
     x = "Treatment",
-    y = "Growth rate",
+    y = "Growth rate (individual/day)",
     fill = "Treatment"
   ) +
   scale_fill_manual(values = c("14C" = "#145da0", "30C" = "#bc1823")) +  # Custom colors
@@ -110,7 +110,7 @@ ggplot(act_plot_data, aes(x = incubator, y = mu, fill = incubator)) +
   theme_minimal() +
   labs(
     x = "Treatment",
-    y = "Growth rate",
+    y = "Growth rate (individual/day)",
     fill = "Treatment"
   ) +
   scale_fill_manual(values = c("14C" = "#145da0", "30C" = "#bc1823")) +  # Custom colors
@@ -216,7 +216,9 @@ output_norberg2 %>%
               alpha = 0.5, show.legend = FALSE) +  # Adjust transparency for shading, hide legend for fill
   ylim(0, 1.5) +  # Limit the y-axis from 0 to 1.5 for Growth
   theme_minimal() +  # Use a minimal theme
-  facet_wrap(~Treatment)  # Facet by Treatment (e.g., 14C, 30C)
+  facet_wrap(~Treatment)  +
+  labs(x = "Temperature (°C)",
+    y = "Growth rate (individual/day)")
 
 #so far unsuccesful in getting final figure
 ################################################################################
@@ -287,7 +289,7 @@ plot <- unique_rmax_df %>%
   theme_minimal() +
   labs(
     x = "Treatment",
-    y = "r max",
+    y = "r max (individual/day)",
     fill = "Treatment"
   ) +
   scale_fill_manual(values = c("14C" = "#145da0", "30C" = "#bc1823", "6F" = "#ff8210", "48F" = "#800080"))
@@ -457,7 +459,7 @@ output_norberg_f4 %>%
   theme_minimal() + 
   labs(
     x = "Fluctuation period (hours)",
-    y = "r max",
+    y = "r max (individual/day)",
     colour = "Treatment")
 
 output_norberg_f4 %>% 
@@ -474,9 +476,8 @@ output_norberg_f4 %>%
     y = "r max",
     fill = "Period of fluctuation"
   ) +
-  # Customize colors
-  scale_fill_manual(values = c("6" = "#ff8210", "48" = "#800080", "inf" = "green3")) +  
-  # Add significance annotation for the significant comparison (48-inf)
+  scale_fill_manual(values = c("14C" = "#145da0", "30C" = "#bc1823", "6F" = "#ff8210", "48F" = "#800080")) + 
+# Add significance annotation for the significant comparison (48-inf)
   geom_signif(
     comparisons = list(c("48", "inf")),
     annotations = "*",  # Significance star
@@ -486,6 +487,28 @@ output_norberg_f4 %>%
   # Reorder x-axis to match the specified factor levels
   scale_x_discrete(limits = c("6", "48", "inf"))
 
+output_norberg_f4 %>% 
+  mutate(period_fluctuation = factor(period_fluctuation, levels = c("6", "48", "inf"))) %>%  
+  ggplot(aes(x = period_fluctuation, y = rmax, fill = incubator)) + 
+  # Create a boxplot
+  geom_boxplot(alpha = 1, outlier.shape = NA) +  
+  # Add scatter points for better visualization
+  geom_jitter(position = position_jitterdodge(jitter.width = 0), alpha = 1) +  
+  # Apply minimal theme and labels
+  theme_minimal() +
+  labs(
+    x = "Fluctuation period (hours)",
+    y = "r max (individuals/day)",
+    fill = "Treatment"
+  ) +
+  scale_fill_manual(values = c("14C" = "#145da0", "30C" = "#bc1823", "6F" = "#ff8210", "48F" = "#800080")) + 
+  geom_signif(
+    comparisons = list(c("48", "inf")),
+    annotations = "*",  # Significance star
+    tip_length = 0.02, 
+    textsize = 6,
+  ) +
+  scale_x_discrete(limits = c("6", "48", "inf"))
 
 
 #T opt##########################################################################
