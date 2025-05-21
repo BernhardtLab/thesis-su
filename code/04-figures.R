@@ -6,6 +6,7 @@ output_norberg2 <- output_norberg %>%
 # tpc ---------------------------------------------------------------------
 all_rfus_3 <- read.csv("data/tpc_processed_all_rfus.csv")
 all_rfus_3 %>% 
+  filter(temp_treatment %in% c("blank", "14C", "30C")) %>%
   rename(Treatment = temp_treatment) %>% 
   ggplot(aes(x = days, y = RFU, colour = Treatment, group = well_id)) + 
   geom_line() +
@@ -31,6 +32,7 @@ output_norberg2 %>%
   facet_wrap(~Treatment)
 
 output_norberg2 %>% 
+  filter(incubator %in% c("blank", "14C", "30C")) %>%
   rename(Treatment = incubator, 
          Growth = predicted_growth, 
          Temperature = temp) %>% 
@@ -72,7 +74,7 @@ ggplot(preds_plot_data, aes(x = incubator, y = predicted_growth, fill = incubato
   theme_minimal() +
   labs(
     x = "Treatment",
-    y = "Growth rate (individual/day)",
+    y = "Predicted growth rate (individual/day)",
     fill = "Treatment"
   ) +
   scale_fill_manual(values = c("14C" = "#145da0", "30C" = "#bc1823")) +  # Custom colors
@@ -260,16 +262,17 @@ unique_rmax_df <- output_norberg2 %>%
   distinct(rmax, .keep_all = TRUE)
 
 #chat helps
-
 # Load necessary libraries
 library(ggplot2)
 library(dplyr)
 library(rstatix)
 library(ggsignif)
+library(purrr)  # Needed for transpose()
 
-# Ensure 'incubator' is a factor
+# Ensure 'incubator' is a factor and filter desired groups
 unique_rmax_df <- unique_rmax_df %>%
-  mutate(incubator = as.factor(incubator))
+  mutate(incubator = as.factor(incubator)) %>%
+  filter(incubator %in% c("blank", "14C", "30C"))
 
 # Perform Games-Howell test
 rmax_games_howell_results <- unique_rmax_df %>%
@@ -280,6 +283,29 @@ rmax_games_howell_results <- unique_rmax_df %>%
 significant_results <- rmax_games_howell_results %>%
   filter(p.adj < 0.05) %>%
   select(group1, group2, significance)
+
+# Define the groups to be included
+included_groups <- c("blank", "14C", "30C")
+
+# Filter significance results for only included groups
+filtered_significant_results <- significant_results %>%
+  filter(group1 %in% included_groups & group2 %in% included_groups)
+
+# Create comparison list from the filtered results
+comparison_list <- filtered_significant_results %>%
+  select(group1, group2) %>%
+  as.list() %>%
+  transpose()
+
+# Extract matching annotations
+annotations <- filtered_significant_results$significance
+
+# Define staggered y-positions (adjust as needed)
+y_positions <- seq(
+  from = max(unique_rmax_df$rmax, na.rm = TRUE) + 0.05,
+  by = 0.04,
+  length.out = length(comparison_list)
+)
 
 # Create the plot
 plot <- unique_rmax_df %>%
@@ -292,29 +318,20 @@ plot <- unique_rmax_df %>%
     y = "r max (individual/day)",
     fill = "Treatment"
   ) +
-  scale_fill_manual(values = c("14C" = "#145da0", "30C" = "#bc1823", "6F" = "#ff8210", "48F" = "#800080"))
+  scale_fill_manual(values = c("14C" = "#145da0", 
+                               "30C" = "#bc1823", 
+                               "6F" = "#ff8210", 
+                               "48F" = "#800080", 
+                               "blank" = "grey"))
 
-# Manually create the list of significant comparisons
-comparison_list <- list(
-  c("14C", "30C"),
-  c("14C", "48F"),
-  c("14C", "6F")
-)
-
-# Ensure annotations match the number of comparisons
-annotations <- significant_results$significance
-
-# Define staggered y-positions (adjust as needed)
-y_positions <- c(max(unique_rmax_df$rmax) + 0.05, max(unique_rmax_df$rmax) + 0.09, max(unique_rmax_df$rmax) + 0.13)
-
-# Add significance annotations from Games-Howell test with staggered brackets
+# Add significance annotations
 plot + 
   geom_signif(
     comparisons = comparison_list, 
-    annotations = annotations,  # Ensure this has the same length as comparisons
+    annotations = annotations,
     tip_length = 0.02, 
     textsize = 6,
-    y_position = y_positions  # Apply staggered y-positions
+    y_position = y_positions
   )
 
 # tradeoff ----------------------------------------------------------------
